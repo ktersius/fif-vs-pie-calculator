@@ -9,7 +9,7 @@
 ## 2. Calculation Core — Types and Constants
 
 - [ ] 2.1 Create `src/lib/constants.ts` with exchange rate, ETF management fee, withholding tax, and InvestNow/IBKR fee constants
-- [ ] 2.2 Create `src/lib/types.ts` with `SimulationInputs` (including investment horizon), per-year `YearRecord`, per-platform result, and aggregate `Summary` types
+- [ ] 2.2 Create `src/lib/types.ts` with `SimulationInputs` (including investment horizon), per-year `YearRecord` (including tax sub-components, representative per-order fee template, order count, annual fee totals, and crash-year flag), per-platform result, and aggregate `Summary` types
 - [ ] 2.3 Add a frequency-to-instances map (Weekly 52, Fortnightly 26, Monthly 12, Annually 1)
 
 ## 3. Fee Helpers
@@ -58,7 +58,8 @@
 - [ ] 8.1 Build the portfolio balance line/area chart (Year 0 through the horizon year, one series per platform)
 - [ ] 8.2 Build the tax drag bar chart (per-year tax by platform)
 - [ ] 8.3 Build the summary dashboard cards (principal, final balances, itemised fees with combined total, tax)
-- [ ] 8.4 Add NZD currency and percentage formatters and use them across charts and dashboard without mutating computed values
+- [ ] 8.4 Build the expandable year-by-year breakdown table (accordion rows) showing per-year tax detail (PIE and IBKR FDR/CV with selected method highlighted) and a representative per-order fee breakdown with order count and annual totals; flag crash years and support chart-bar click-through
+- [ ] 8.5 Add NZD currency and percentage formatters and use them across charts, dashboard, and breakdown table without mutating computed values
 
 ## 9. Tests and Verification
 

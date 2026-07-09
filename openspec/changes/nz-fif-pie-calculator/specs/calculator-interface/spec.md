@@ -90,6 +90,41 @@ The system SHALL display a summary dashboard with the key aggregate outcomes for
 - **WHEN** the itemised fee categories are displayed for a platform
 - **THEN** the sum of the categories equals the combined total fees shown for that platform
 
+### Requirement: Year-by-Year Breakdown Drill-Down
+
+The system SHALL provide an expandable year-by-year breakdown that lets the investor inspect, for any simulated year, the full tax calculation and the per-order fee calculation for each platform. It SHALL be presented as an accordion table with one row per year (Year 0 through the horizon), where each row expands inline to reveal the detail without leaving the page.
+
+Tax detail per year SHALL show:
+- InvestNow (PIE): opening balance, FDR taxable income (opening balance × 5%), PIR, and PIE tax owed.
+- IBKR (FIF): cost base with de minimis status (exempt or FIF); gross dividends and foreign tax credit; when FIF-exempt, the dividend-only computation (NZ gross tax, FTC, net); when the FIF regime applies, both the FDR method and CV method figures with the selected (lesser) method highlighted and the resulting net tax owed.
+
+Fee detail per year SHALL show a representative single-order breakdown rather than repeating identical periodic orders:
+- IBKR: gross order amount → FX fee (0.03%) → brokerage fee (capped) → net invested, plus the number of orders in the year and the annual fee totals.
+- InvestNow: the annual contribution and the aggregate 0.50% buy fee, plus the management fee for the year.
+- Year 0 SHALL show the one-off initial-investment order breakdown, and the final horizon year SHALL show the one-off exit-fee breakdown.
+
+Crash years SHALL be visually flagged in the breakdown.
+
+#### Scenario: Expand a year to view tax breakdown
+
+- **WHEN** the investor expands a year's row in the breakdown table
+- **THEN** the row reveals, for each platform, the full tax calculation for that year while neighbouring year rows remain visible
+
+#### Scenario: Selected FIF method highlighted
+
+- **WHEN** a year's IBKR breakdown is shown while the FIF regime applies
+- **THEN** both the FDR and CV method figures are displayed and the method producing the lesser net tax is highlighted as the one applied
+
+#### Scenario: Representative order avoids duplication
+
+- **WHEN** the fee breakdown for a year with multiple identical periodic orders is shown
+- **THEN** a single representative order breakdown is displayed alongside the order count and annual fee totals, rather than one row per order
+
+#### Scenario: Chart click opens the corresponding year
+
+- **WHEN** the investor clicks a bar for a given year in the tax drag chart
+- **THEN** the breakdown table expands (or scrolls to) that year's row
+
 ### Requirement: NZD Currency and Percentage Formatting
 
 The system SHALL format all monetary values as New Zealand Dollars and all rates as percentages for display, without mutating the underlying computed values.
