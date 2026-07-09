@@ -25,6 +25,20 @@ The system SHALL apply fixed economic constants and platform fee structures cons
 - **WHEN** the annual management fee is computed for either portfolio
 - **THEN** it equals 0.03% of the pre-tax balance for that year
 
+### Requirement: Simulation Horizon
+
+The system SHALL run the simulation over a configurable investment horizon of H years (1 to 50, default 20), producing records for Year 0 (initial state) through Year H.
+
+#### Scenario: Default horizon
+
+- **WHEN** the investment horizon is not changed by the investor
+- **THEN** the simulation runs for 20 years, producing records for Year 0 through Year 20
+
+#### Scenario: Custom horizon
+
+- **WHEN** the investor sets the investment horizon to H years
+- **THEN** the simulation loops Years 1 through H and produces H + 1 yearly records (Year 0 through Year H)
+
 ### Requirement: Portfolio Initialisation
 
 The system SHALL initialise each portfolio's Year 0 balance from the initial investment after deducting the respective platform entry fees.
@@ -97,11 +111,12 @@ The system SHALL floor each portfolio's balance at $0 because the model represen
 
 ### Requirement: Crash Year Modelling
 
-The system SHALL select the configured number of crash years (0 to 5) out of the 20 simulated years and apply a −15% market return in those years. Crash-year selection SHALL be deterministic: it is derived from an explicit seed and does not change when other simulation inputs change.
+The system SHALL select the configured number of crash years (0 to the lesser of 5 and the investment horizon) out of the simulated years and apply a −15% market return in those years. Crash-year selection SHALL be deterministic: it is derived from an explicit seed and does not change when other simulation inputs change.
 
 - Both portfolios SHALL share the same set of crash years for a given seed.
 - A given seed SHALL always reproduce the same set of crash years.
 - The set SHALL only change when the seed changes (via re-roll) or when the number of crash years changes.
+- Crash years SHALL be selected from Years 1 through the investment horizon H.
 
 #### Scenario: Crash year applies negative return
 
@@ -110,8 +125,8 @@ The system SHALL select the configured number of crash years (0 to 5) out of the
 
 #### Scenario: Crash years distinct and within range
 
-- **WHEN** the number of crash years is configured as N (0 ≤ N ≤ 5)
-- **THEN** exactly N distinct years within Years 1–20 are selected as crash years
+- **WHEN** the number of crash years is configured as N and the horizon is H
+- **THEN** exactly N distinct years within Years 1–H are selected as crash years (with N ≤ min(5, H))
 
 #### Scenario: Crash years stable across non-crash input changes
 
@@ -128,16 +143,16 @@ The system SHALL select the configured number of crash years (0 to 5) out of the
 - **WHEN** the investor increases the number of crash years (e.g. from 3 to 4) without re-rolling
 - **THEN** the original crash years are preserved and additional distinct crash years are deterministically added from the current seed (and decreasing the count deterministically removes the most recently added years)
 
-### Requirement: Year 20 Exit
+### Requirement: Final Year Exit
 
-The system SHALL apply platform exit fees to each portfolio's final balance at the conclusion of Year 20.
+The system SHALL apply platform exit fees to each portfolio's final balance at the conclusion of the final year of the investment horizon.
 
 #### Scenario: InvestNow exit fee
 
-- **WHEN** the InvestNow simulation reaches the end of Year 20
+- **WHEN** the InvestNow simulation reaches the end of the final horizon year
 - **THEN** a 0.50% sell transaction fee is deducted from the final aggregated balance
 
 #### Scenario: IBKR exit fee
 
-- **WHEN** the IBKR simulation reaches the end of Year 20
+- **WHEN** the IBKR simulation reaches the end of the final horizon year
 - **THEN** a single FX fee and a single tiered brokerage fee are deducted from the final balance

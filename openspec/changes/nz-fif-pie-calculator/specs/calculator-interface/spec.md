@@ -7,16 +7,17 @@ The system SHALL present a control panel allowing the investor to configure all 
 - Initial Investment: $0 to $500,000 (default $100,000).
 - Periodic Contribution: $0 to $10,000 (default $250).
 - Contribution Frequency: dropdown [Weekly, Fortnightly, Monthly, Annually] (default Weekly).
+- Investment Horizon: 1 to 50 years (default 20).
 - Expected Annual Market Return (excluding dividends): 4% to 15% (default 8%).
 - Dividend Yield: 0% to 5% (default 1.5%).
 - Marginal Income Tax Rate: dropdown [10.5%, 17.5%, 30%, 33%, 39%] (default 39%).
 - PIE PIR: dropdown [10.5%, 17.5%, 28%] (default 28%).
-- Number of Crash Years: 0 to 5 (default 3).
+- Number of Crash Years: 0 to the lesser of 5 and the investment horizon (default 3).
 
 #### Scenario: Defaults on first load
 
 - **WHEN** the application first loads
-- **THEN** every input displays its specified default value
+- **THEN** every input displays its specified default value, including a 20-year investment horizon
 
 #### Scenario: Input change re-runs the simulation
 
@@ -27,6 +28,11 @@ The system SHALL present a control panel allowing the investor to configure all 
 
 - **WHEN** the investor attempts to set a numeric input
 - **THEN** the value is constrained to the specified minimum and maximum for that input
+
+#### Scenario: Crash years cannot exceed the horizon
+
+- **WHEN** the investor sets an investment horizon shorter than the current number of crash years
+- **THEN** the number of crash years is clamped to the investment horizon so crash years never exceed the number of simulated years
 
 ### Requirement: Crash Year Re-roll Control
 
@@ -46,10 +52,10 @@ The system SHALL provide an explicit "Re-roll crash years" control that recomput
 
 The system SHALL render a line or area chart mapping year (X-axis) to portfolio balance (Y-axis) for both the InvestNow and IBKR portfolios.
 
-#### Scenario: Both portfolios plotted over 20 years
+#### Scenario: Both portfolios plotted over the horizon
 
 - **WHEN** the simulation completes
-- **THEN** the chart shows one series per platform across Years 0 through 20 with balances on the Y-axis
+- **THEN** the chart shows one series per platform across Year 0 through the final year of the investment horizon with balances on the Y-axis
 
 ### Requirement: Tax Drag Chart
 

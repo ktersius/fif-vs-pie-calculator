@@ -5,11 +5,11 @@ New Zealand investors choosing between a locally-domiciled PIE fund (InvestNow F
 ## What Changes
 
 - Introduce a single-page React application that simulates a 20-year investment comparison between an InvestNow PIE fund and an IBKR direct US ETF holding.
-- Add a control panel of investor inputs (initial investment, periodic contribution, frequency, market return, dividend yield, marginal tax rate, PIR, and number of simulated crash years).
+- Add a control panel of investor inputs (initial investment, periodic contribution, frequency, investment horizon, market return, dividend yield, marginal tax rate, PIR, and number of simulated crash years).
 - Implement platform-specific fee models: InvestNow buy/sell transaction fees; IBKR per-contribution FX auto-conversion fees and tiered USD brokerage minimums converted to NZD.
 - Implement the two tax regimes: PIE FDR taxation using the PIR, and FIF taxation with a $100,000 NZD de minimis threshold, choosing the lesser of the FDR and CV methods with foreign tax credits.
-- Add visualisations: a portfolio balance line/area chart over 20 years, a per-year tax drag bar chart, and a summary dashboard (principal contributed, final net balances, total fees, total NZ tax).
-- Handle edge cases such as IBKR transaction minimums consuming an entire micro-contribution, and randomised placement of crash years across the 20-year horizon.
+- Add visualisations: a portfolio balance line/area chart over the investment horizon, a per-year tax drag bar chart, and a summary dashboard (principal contributed, final net balances, total fees, total NZ tax).
+- Handle edge cases such as IBKR transaction minimums, randomised placement of crash years across the horizon, and a configurable investment horizon (default 20 years).
 
 ## Capabilities
 
