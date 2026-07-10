@@ -41,3 +41,37 @@ export function selectCrashYears(
 
   return years.slice(0, capped).sort((a, b) => a - b);
 }
+
+/**
+ * Deterministic default crash depth (drop fraction) for a given year.
+ *
+ * The magnitude is keyed to the pair `(seed, year)` rather than the draw order,
+ * so a crash year's default depth is stable when the number of crash years
+ * changes. The value is drawn uniformly from [min, max]. When `min === max`,
+ * the band collapses to that single fixed depth.
+ */
+export function crashDepthDefault(seed: number, year: number, min: number, max: number): number {
+  if (min >= max) return min;
+  // Combine seed and year into a single well-mixed seed for the PRNG.
+  const combined = (Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(year + 1, 0xc2b2ae35)) >>> 0;
+  const r = mulberry32(combined)();
+  return min + (max - min) * r;
+}
+
+/**
+ * Resolve the effective crash depth for a year: a manual override when present,
+ * otherwise the band-generated default. The result is clamped to the outer
+ * severity bounds.
+ */
+export function effectiveCrashDepth(
+  year: number,
+  overrides: Record<number, number>,
+  seed: number,
+  min: number,
+  max: number,
+  outerMin: number,
+  outerMax: number,
+): number {
+  const raw = overrides[year] ?? crashDepthDefault(seed, year, min, max);
+  return Math.max(outerMin, Math.min(outerMax, raw));
+}

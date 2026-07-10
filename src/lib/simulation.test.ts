@@ -13,6 +13,9 @@ const base: SimulationInputs = {
   pir: 0.28,
   crashYears: 3,
   crashSeed: 42,
+  crashSeverityMin: 0.1,
+  crashSeverityMax: 0.35,
+  crashOverrides: {},
 };
 
 describe('runSimulation structure', () => {
@@ -32,6 +35,39 @@ describe('runSimulation structure', () => {
   it('computes total principal as initial + periodic x instances x horizon', () => {
     const result = runSimulation(base);
     expect(result.totalPrincipal).toBe(100_000 + 250 * 52 * 20);
+  });
+});
+
+describe('crash severity', () => {
+  it('collapsed band (min=max=0.15) applies a fixed -15% depth to every crash year', () => {
+    const result = runSimulation({ ...base, crashSeverityMin: 0.15, crashSeverityMax: 0.15 });
+    for (const y of result.crashYears) {
+      const rec = result.ibkr.records[y];
+      expect(rec.isCrashYear).toBe(true);
+      expect(rec.crashDepth).toBeCloseTo(0.15, 10);
+    }
+  });
+
+  it('an override changes only its own crash year depth', () => {
+    const baseline = runSimulation(base);
+    const target = baseline.crashYears[0];
+    const overridden = runSimulation({ ...base, crashOverrides: { [target]: 0.5 } });
+    expect(overridden.ibkr.records[target].crashDepth).toBeCloseTo(0.5, 10);
+    for (const y of baseline.crashYears) {
+      if (y === target) continue;
+      expect(overridden.ibkr.records[y].crashDepth).toBeCloseTo(
+        baseline.ibkr.records[y].crashDepth,
+        10,
+      );
+    }
+  });
+
+  it('re-roll (new seed) yields fresh crash depths', () => {
+    const a = runSimulation({ ...base, crashSeed: 42 });
+    const b = runSimulation({ ...base, crashSeed: 987_654 });
+    const depthsA = a.crashYears.map((y) => a.ibkr.records[y].crashDepth);
+    const depthsB = b.crashYears.map((y) => b.ibkr.records[y].crashDepth);
+    expect(depthsA).not.toEqual(depthsB);
   });
 });
 

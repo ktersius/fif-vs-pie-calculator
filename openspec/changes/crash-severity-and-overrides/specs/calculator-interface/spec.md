@@ -1,0 +1,132 @@
+## ADDED Requirements
+
+### Requirement: Crash Severity Adjustment Control
+
+The system SHALL provide a single reusable crash-depth adjustment control that edits the effective depth of one crash year, mounted in two places — the year-by-year breakdown row and the portfolio balance chart marker popover — both writing the same per-year override state so the two surfaces never diverge.
+
+The control SHALL let the investor move a crash's depth across the outer bounds (5% to 60% drop), display the current effective depth, indicate whether the value is a band default or a manual override, and offer a reset to the band default. Adjusting the control SHALL re-run the simulation and update all outputs live.
+
+#### Scenario: Adjusting a crash updates the simulation live
+
+- **WHEN** the investor moves the crash-depth control for a given year
+- **THEN** that year's effective depth changes and the charts, summary, and breakdown recompute immediately
+
+#### Scenario: Both surfaces stay in sync
+
+- **WHEN** the investor adjusts a crash's depth from the balance-chart popover and then opens that year's breakdown row
+- **THEN** the breakdown row shows the same adjusted depth, because both surfaces edit one shared override state
+
+#### Scenario: Reset control reverts to the band default
+
+- **WHEN** a crash's depth has been manually overridden and the investor activates its reset control
+- **THEN** the depth reverts to the band-generated default and the override indicator clears
+
+## MODIFIED Requirements
+
+### Requirement: Investor Input Control Panel
+
+The system SHALL present a control panel allowing the investor to configure all simulation inputs, each with the specified range or options and default value.
+
+- Initial Investment: $0 to $500,000 (default $100,000).
+- Periodic Contribution: $0 to $10,000 (default $250).
+- Contribution Frequency: dropdown [Weekly, Fortnightly, Monthly, Annually] (default Weekly).
+- Investment Horizon: 1 to 50 years (default 20).
+- Expected Annual Market Return (excluding dividends): 4% to 15% (default 8%).
+- Dividend Yield: 0% to 5% (default 1.5%).
+- Marginal Income Tax Rate: dropdown [10.5%, 17.5%, 30%, 33%, 39%] (default 39%).
+- PIE PIR: dropdown [10.5%, 17.5%, 28%] (default 28%).
+- Number of Crash Years: 0 to the lesser of 5 and the investment horizon (default 3).
+- Crash Severity Band: a dual-thumb range slider in positive drop percentage, outer bounds 5% to 60% (default 10%–35%), with the guardrail that the minimum thumb never exceeds the maximum thumb. When the two thumbs coincide, all crash defaults collapse to that single depth.
+
+#### Scenario: Defaults on first load
+
+- **WHEN** the application first loads
+- **THEN** every input displays its specified default value, including a 20-year investment horizon and a 10%–35% crash severity band
+
+#### Scenario: Input change re-runs the simulation
+
+- **WHEN** the investor changes any input within its allowed range
+- **THEN** the simulation recomputes and all charts and summary figures update accordingly
+
+#### Scenario: Inputs constrained to valid ranges
+
+- **WHEN** the investor attempts to set a numeric input
+- **THEN** the value is constrained to the specified minimum and maximum for that input
+
+#### Scenario: Crash years cannot exceed the horizon
+
+- **WHEN** the investor sets an investment horizon shorter than the current number of crash years
+- **THEN** the number of crash years is clamped to the investment horizon so crash years never exceed the number of simulated years
+
+#### Scenario: Severity band thumbs cannot cross
+
+- **WHEN** the investor drags the minimum severity thumb past the maximum thumb (or vice versa)
+- **THEN** the thumbs are constrained so that `min ≤ max` is always maintained within the 5%–60% outer bounds
+
+### Requirement: Portfolio Balance Chart
+
+The system SHALL render a line or area chart mapping year (X-axis) to portfolio balance (Y-axis) for both the InvestNow and IBKR portfolios, and SHALL mark crash years on the chart with an interactive indicator for inspecting and adjusting each crash's depth.
+
+- A crash marker SHALL be rendered at each crash year's position.
+- Hovering a crash marker SHALL reveal that year's effective crash depth.
+- Clicking a crash marker SHALL open a popover hosting the shared crash-depth adjustment control (slider plus reset) for that year.
+
+#### Scenario: Both portfolios plotted over the horizon
+
+- **WHEN** the simulation completes
+- **THEN** the chart shows one series per platform across Year 0 through the final year of the investment horizon with balances on the Y-axis
+
+#### Scenario: Crash markers rendered at crash years
+
+- **WHEN** the simulation has one or more crash years
+- **THEN** a crash marker appears at each crash year's position on the balance chart
+
+#### Scenario: Hovering a marker reveals its depth
+
+- **WHEN** the investor hovers a crash marker
+- **THEN** the marker reveals that crash year's effective depth
+
+#### Scenario: Clicking a marker opens the adjustment control
+
+- **WHEN** the investor clicks a crash marker
+- **THEN** a popover opens containing the shared crash-depth slider and reset for that year, and adjusting it re-runs the simulation
+
+### Requirement: Year-by-Year Breakdown Drill-Down
+
+The system SHALL provide an expandable year-by-year breakdown that lets the investor inspect, for any simulated year, the full tax calculation and the per-order fee calculation for each platform. It SHALL be presented as an accordion table with one row per year (Year 0 through the horizon), where each row expands inline to reveal the detail without leaving the page.
+
+Tax detail per year SHALL show:
+- InvestNow (PIE): opening balance, FDR taxable income (opening balance × 5%), PIR, and PIE tax owed.
+- IBKR (FIF): cost base with de minimis status (exempt or FIF); gross dividends and foreign tax credit; when FIF-exempt, the dividend-only computation (NZ gross tax, FTC, net); when the FIF regime applies, both the FDR method and CV method figures with the selected (lesser) method highlighted and the resulting net tax owed.
+
+Fee detail per year SHALL show a representative single-order breakdown rather than repeating identical periodic orders:
+- IBKR: gross order amount → FX fee (0.03%) → brokerage fee (capped) → net invested, plus the number of orders in the year and the annual fee totals.
+- InvestNow: the annual contribution and the aggregate 0.50% buy fee, plus the management fee for the year.
+- Year 0 SHALL show the one-off initial-investment order breakdown, and the final horizon year SHALL show the one-off exit-fee breakdown.
+
+Crash years SHALL be visually flagged in the breakdown, SHALL display the effective crash depth for that year (e.g. `crash −38%`), and SHALL host the shared crash-depth adjustment control (slider plus reset) inline so the investor can change that crash's depth from the row.
+
+#### Scenario: Expand a year to view tax breakdown
+
+- **WHEN** the investor expands a year's row in the breakdown table
+- **THEN** the row reveals, for each platform, the full tax calculation for that year while neighbouring year rows remain visible
+
+#### Scenario: Selected FIF method highlighted
+
+- **WHEN** a year's IBKR breakdown is shown while the FIF regime applies
+- **THEN** both the FDR and CV method figures are displayed and the method producing the lesser net tax is highlighted as the one applied
+
+#### Scenario: Representative order avoids duplication
+
+- **WHEN** the fee breakdown for a year with multiple identical periodic orders is shown
+- **THEN** a single representative order breakdown is displayed alongside the order count and annual fee totals, rather than one row per order
+
+#### Scenario: Chart click opens the corresponding year
+
+- **WHEN** the investor clicks a bar for a given year in the tax drag chart
+- **THEN** the breakdown table expands (or scrolls to) that year's row
+
+#### Scenario: Crash row shows and adjusts depth
+
+- **WHEN** the investor expands a crash year's row
+- **THEN** the row displays the effective crash depth and provides the shared crash-depth control to adjust or reset it, updating the simulation on change

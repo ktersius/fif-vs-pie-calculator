@@ -1,4 +1,10 @@
-import { MAX_CRASH_YEARS, MAX_HORIZON, MIN_HORIZON } from '../lib/constants';
+import {
+  CRASH_SEVERITY_OUTER_MAX,
+  CRASH_SEVERITY_OUTER_MIN,
+  MAX_CRASH_YEARS,
+  MAX_HORIZON,
+  MIN_HORIZON,
+} from '../lib/constants';
 import { FREQUENCIES, MARGINAL_RATES, PIR_RATES } from '../lib/defaults';
 import { formatNZD, formatPercent } from '../lib/format';
 import type { Frequency, SimulationInputs } from '../lib/types';
@@ -51,6 +57,51 @@ function Slider({
       onChange={(e) => onChange(Number(e.target.value))}
       className="w-full accent-blue-600"
     />
+  );
+}
+
+function DualRange({
+  min,
+  max,
+  step,
+  low,
+  high,
+  onChange,
+}: {
+  min: number;
+  max: number;
+  step: number;
+  low: number;
+  high: number;
+  onChange: (low: number, high: number) => void;
+}) {
+  const span = max - min;
+  const lowPct = ((low - min) / span) * 100;
+  const highPct = ((high - min) / span) * 100;
+  return (
+    <div className="dual-range">
+      <div className="dual-range-track" />
+      <div
+        className="dual-range-fill"
+        style={{ left: `${lowPct}%`, width: `${highPct - lowPct}%` }}
+      />
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={low}
+        onChange={(e) => onChange(Math.min(Number(e.target.value), high), high)}
+      />
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={high}
+        onChange={(e) => onChange(low, Math.max(Number(e.target.value), low))}
+      />
+    </div>
   );
 }
 
@@ -151,7 +202,7 @@ export default function ControlPanel({ inputs, crashYearsMax, onChange, onReroll
 
       <Field
         label="Number of Crash Years"
-        hint={`${inputs.crashYears} of ${inputs.horizonYears} years at -15% (max ${Math.min(
+        hint={`${inputs.crashYears} of ${inputs.horizonYears} years (max ${Math.min(
           MAX_CRASH_YEARS,
           crashYearsMax,
         )})`}
@@ -162,6 +213,25 @@ export default function ControlPanel({ inputs, crashYearsMax, onChange, onReroll
           step={1}
           value={inputs.crashYears}
           onChange={(v) => onChange('crashYears', v)}
+        />
+      </Field>
+
+      <Field
+        label="Crash Severity Band"
+        hint={`${formatPercent(inputs.crashSeverityMin)} \u2013 ${formatPercent(
+          inputs.crashSeverityMax,
+        )} drop`}
+      >
+        <DualRange
+          min={CRASH_SEVERITY_OUTER_MIN}
+          max={CRASH_SEVERITY_OUTER_MAX}
+          step={0.005}
+          low={inputs.crashSeverityMin}
+          high={inputs.crashSeverityMax}
+          onChange={(lo, hi) => {
+            onChange('crashSeverityMin', lo);
+            onChange('crashSeverityMax', hi);
+          }}
         />
       </Field>
 

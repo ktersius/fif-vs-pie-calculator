@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import { formatNZD } from '../lib/format';
+import { formatNZD, formatPercent } from '../lib/format';
 import type {
   FeeYearDetail,
   FifTaxDetail,
@@ -9,11 +9,15 @@ import type {
   PieTaxDetail,
   SimulationResult,
 } from '../lib/types';
+import CrashDepthControl from './CrashDepthControl';
 
 interface Props {
   result: SimulationResult;
   expandedYear: number | null;
   onToggle: (year: number) => void;
+  overrides: Record<number, number>;
+  onSetOverride: (year: number, depth: number) => void;
+  onResetOverride: (year: number) => void;
 }
 
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
@@ -126,27 +130,53 @@ function FeePanel({ fees }: { fees: FeeYearDetail }) {
 function ExpandedYear({
   inv,
   ibkr,
+  overrides,
+  onSetOverride,
+  onResetOverride,
 }: {
   inv: InvestNowYearRecord;
   ibkr: IbkrYearRecord;
+  overrides: Record<number, number>;
+  onSetOverride: (year: number, depth: number) => void;
+  onResetOverride: (year: number) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 gap-4 border-t border-slate-200 bg-white p-4 lg:grid-cols-2">
-      <div className="space-y-3">
-        <div className="text-sm font-semibold text-blue-700">InvestNow (PIE)</div>
-        {inv.taxDetail ? <PieTaxPanel detail={inv.taxDetail} /> : null}
-        <FeePanel fees={inv.fees} />
-      </div>
-      <div className="space-y-3">
-        <div className="text-sm font-semibold text-green-700">IBKR (FIF)</div>
-        {ibkr.taxDetail ? <FifTaxPanel detail={ibkr.taxDetail} /> : null}
-        <FeePanel fees={ibkr.fees} />
+    <div className="border-t border-slate-200 bg-white p-4">
+      {inv.isCrashYear ? (
+        <div className="mb-4 max-w-sm rounded border border-red-200 bg-red-50 p-3">
+          <CrashDepthControl
+            year={inv.year}
+            depth={ibkr.crashDepth}
+            isOverride={overrides[inv.year] !== undefined}
+            onChange={onSetOverride}
+            onReset={onResetOverride}
+          />
+        </div>
+      ) : null}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="space-y-3">
+          <div className="text-sm font-semibold text-blue-700">InvestNow (PIE)</div>
+          {inv.taxDetail ? <PieTaxPanel detail={inv.taxDetail} /> : null}
+          <FeePanel fees={inv.fees} />
+        </div>
+        <div className="space-y-3">
+          <div className="text-sm font-semibold text-green-700">IBKR (FIF)</div>
+          {ibkr.taxDetail ? <FifTaxPanel detail={ibkr.taxDetail} /> : null}
+          <FeePanel fees={ibkr.fees} />
+        </div>
       </div>
     </div>
   );
 }
 
-export default function BreakdownTable({ result, expandedYear, onToggle }: Props) {
+export default function BreakdownTable({
+  result,
+  expandedYear,
+  onToggle,
+  overrides,
+  onSetOverride,
+  onResetOverride,
+}: Props) {
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200">
       <table className="w-full text-sm">
@@ -177,7 +207,7 @@ export default function BreakdownTable({ result, expandedYear, onToggle }: Props
                     {inv.year}
                     {inv.isCrashYear ? (
                       <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-700">
-                        crash
+                        crash −{formatPercent(ibkr.crashDepth)}
                       </span>
                     ) : null}
                   </td>
@@ -190,7 +220,13 @@ export default function BreakdownTable({ result, expandedYear, onToggle }: Props
                 {expanded ? (
                   <tr key={`detail-${inv.year}`}>
                     <td colSpan={6} className="p-0">
-                      <ExpandedYear inv={inv} ibkr={ibkr} />
+                      <ExpandedYear
+                        inv={inv}
+                        ibkr={ibkr}
+                        overrides={overrides}
+                        onSetOverride={onSetOverride}
+                        onResetOverride={onResetOverride}
+                      />
                     </td>
                   </tr>
                 ) : null}

@@ -12,8 +12,13 @@ export const WITHHOLDING_TAX_RATE = 0.15;
 /** Fair Dividend Rate: 5% of opening balance is deemed taxable income. */
 export const FDR_RATE = 0.05;
 
-/** Crash-year market return. */
-export const CRASH_RETURN = -0.15;
+/** Crash-year severity band bounds (drop fractions). */
+export const CRASH_SEVERITY_OUTER_MIN = 0.05;
+export const CRASH_SEVERITY_OUTER_MAX = 0.6;
+
+/** Default crash severity band (drop fractions). */
+export const DEFAULT_CRASH_SEVERITY_MIN = 0.1;
+export const DEFAULT_CRASH_SEVERITY_MAX = 0.35;
 
 /** FIF de minimis threshold in NZD. */
 export const DE_MINIMIS_THRESHOLD = 100_000;

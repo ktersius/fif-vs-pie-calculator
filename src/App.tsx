@@ -4,7 +4,7 @@ import BreakdownTable from './components/BreakdownTable';
 import ControlPanel from './components/ControlPanel';
 import SummaryDashboard from './components/SummaryDashboard';
 import TaxDragChart from './components/TaxDragChart';
-import { MAX_CRASH_YEARS } from './lib/constants';
+import { CRASH_SEVERITY_OUTER_MAX, CRASH_SEVERITY_OUTER_MIN, MAX_CRASH_YEARS } from './lib/constants';
 import { DEFAULT_INPUTS, newSeed } from './lib/defaults';
 import { runSimulation } from './lib/simulation';
 import type { SimulationInputs } from './lib/types';
@@ -39,7 +39,26 @@ export default function App() {
   }
 
   function handleReroll() {
-    setInputs((prev) => ({ ...prev, crashSeed: newSeed() }));
+    setInputs((prev) => ({ ...prev, crashSeed: newSeed(), crashOverrides: {} }));
+  }
+
+  function handleSetCrashOverride(year: number, depth: number) {
+    const clamped = Math.max(
+      CRASH_SEVERITY_OUTER_MIN,
+      Math.min(CRASH_SEVERITY_OUTER_MAX, depth),
+    );
+    setInputs((prev) => ({
+      ...prev,
+      crashOverrides: { ...prev.crashOverrides, [year]: clamped },
+    }));
+  }
+
+  function handleResetCrashOverride(year: number) {
+    setInputs((prev) => {
+      const next = { ...prev.crashOverrides };
+      delete next[year];
+      return { ...prev, crashOverrides: next };
+    });
   }
 
   function handleToggleYear(year: number) {
@@ -70,7 +89,12 @@ export default function App() {
       </Section>
 
       <Section title="Portfolio Balance">
-        <BalanceChart result={result} />
+        <BalanceChart
+          result={result}
+          overrides={inputs.crashOverrides}
+          onSetOverride={handleSetCrashOverride}
+          onResetOverride={handleResetCrashOverride}
+        />
       </Section>
 
       <Section title="Tax Drag (per year)">
@@ -79,7 +103,14 @@ export default function App() {
       </Section>
 
       <Section title="Year-by-Year Breakdown">
-        <BreakdownTable result={result} expandedYear={expandedYear} onToggle={handleToggleYear} />
+        <BreakdownTable
+          result={result}
+          expandedYear={expandedYear}
+          onToggle={handleToggleYear}
+          overrides={inputs.crashOverrides}
+          onSetOverride={handleSetCrashOverride}
+          onResetOverride={handleResetCrashOverride}
+        />
       </Section>
 
       <footer className="pb-8 text-center text-xs text-slate-400">

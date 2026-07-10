@@ -1,10 +1,11 @@
 import {
-  CRASH_RETURN,
   FREQUENCY_INSTANCES,
   MANAGEMENT_FEE_RATE,
   WITHHOLDING_TAX_RATE,
+  CRASH_SEVERITY_OUTER_MIN,
+  CRASH_SEVERITY_OUTER_MAX,
 } from './constants';
-import { selectCrashYears } from './crash';
+import { effectiveCrashDepth, selectCrashYears } from './crash';
 import {
   ibkrBrokerageFee,
   ibkrFxFee,
@@ -30,6 +31,7 @@ function emptyFeeSummary(): FeeSummary {
 function simulateInvestNow(
   inputs: SimulationInputs,
   crashSet: Set<number>,
+  crashDepths: Map<number, number>,
 ): { records: InvestNowYearRecord[]; fees: FeeSummary; totalTax: number } {
   const { initialInvestment, periodicContribution, frequency, horizonYears, marketReturn, dividendYield, pir } =
     inputs;
@@ -54,6 +56,7 @@ function simulateInvestNow(
       tax: 0,
       closingBalance: balance,
       isCrashYear: false,
+      crashDepth: 0,
       taxDetail: null,
       fees: {
         orderCount: 0,
@@ -70,13 +73,14 @@ function simulateInvestNow(
   for (let year = 1; year <= horizonYears; year++) {
     const opening = balance;
     const isCrash = crashSet.has(year);
+    const crashDepth = isCrash ? (crashDepths.get(year) ?? 0) : 0;
 
     const totalContribution = periodicContribution * instances;
     const buyFee = investNowBuyFee(totalContribution);
     const netContribution = totalContribution - buyFee;
 
     const base = opening + netContribution;
-    const rate = isCrash ? CRASH_RETURN : marketReturn;
+    const rate = isCrash ? -crashDepth : marketReturn;
     const growth = base * rate;
     const grossDividends = base * dividendYield;
     const netDividends = grossDividends * (1 - WITHHOLDING_TAX_RATE);
@@ -136,6 +140,7 @@ function simulateInvestNow(
       tax,
       closingBalance: closing,
       isCrashYear: isCrash,
+      crashDepth,
       taxDetail,
       fees: {
         representativeOrder,
@@ -158,6 +163,7 @@ function simulateInvestNow(
 function simulateIbkr(
   inputs: SimulationInputs,
   crashSet: Set<number>,
+  crashDepths: Map<number, number>,
 ): { records: IbkrYearRecord[]; fees: FeeSummary; totalTax: number } {
   const { initialInvestment, periodicContribution, frequency, horizonYears, marketReturn, dividendYield, marginalRate } =
     inputs;
@@ -184,6 +190,7 @@ function simulateIbkr(
       tax: 0,
       closingBalance: balance,
       isCrashYear: false,
+      crashDepth: 0,
       taxDetail: null,
       fees: {
         orderCount: 0,
@@ -200,6 +207,7 @@ function simulateIbkr(
   for (let year = 1; year <= horizonYears; year++) {
     const opening = balance;
     const isCrash = crashSet.has(year);
+    const crashDepth = isCrash ? (crashDepths.get(year) ?? 0) : 0;
 
     // Per-instance fee loop.
     let netContribution = 0;
@@ -216,7 +224,7 @@ function simulateIbkr(
     costBase += netContribution; // net contributions added to cost base
 
     const base = opening + netContribution;
-    const rate = isCrash ? CRASH_RETURN : marketReturn;
+    const rate = isCrash ? -crashDepth : marketReturn;
     const growth = base * rate;
     const grossDividends = base * dividendYield;
     const netDividends = grossDividends * (1 - WITHHOLDING_TAX_RATE);
@@ -274,6 +282,7 @@ function simulateIbkr(
       tax,
       closingBalance: closing,
       isCrashYear: isCrash,
+      crashDepth,
       taxDetail,
       fees: {
         representativeOrder: perOrder,
@@ -301,8 +310,25 @@ export function runSimulation(inputs: SimulationInputs): SimulationResult {
   const crashYears = selectCrashYears(inputs.crashSeed, inputs.horizonYears, inputs.crashYears);
   const crashSet = new Set(crashYears);
 
-  const investNow = simulateInvestNow(inputs, crashSet);
-  const ibkr = simulateIbkr(inputs, crashSet);
+  // Shared per-year effective crash depths (identical for both platforms).
+  const crashDepths = new Map<number, number>();
+  for (const year of crashYears) {
+    crashDepths.set(
+      year,
+      effectiveCrashDepth(
+        year,
+        inputs.crashOverrides,
+        inputs.crashSeed,
+        inputs.crashSeverityMin,
+        inputs.crashSeverityMax,
+        CRASH_SEVERITY_OUTER_MIN,
+        CRASH_SEVERITY_OUTER_MAX,
+      ),
+    );
+  }
+
+  const investNow = simulateInvestNow(inputs, crashSet, crashDepths);
+  const ibkr = simulateIbkr(inputs, crashSet, crashDepths);
 
   const instances = FREQUENCY_INSTANCES[inputs.frequency];
   const totalPrincipal =

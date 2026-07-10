@@ -12,6 +12,11 @@ export interface SimulationInputs {
   pir: number;
   crashYears: number;
   crashSeed: number;
+  /** Crash severity band (drop fractions, e.g. 0.10 = -10%). */
+  crashSeverityMin: number;
+  crashSeverityMax: number;
+  /** Manual per-year depth overrides (year -> drop fraction). */
+  crashOverrides: Record<number, number>;
 }
 
 /** Breakdown of a single order (contribution, initial investment, or exit). */
@@ -77,6 +82,8 @@ export interface YearRecordBase {
   tax: number;
   closingBalance: number;
   isCrashYear: boolean;
+  /** Effective crash depth (drop fraction) applied this year; 0 when not a crash. */
+  crashDepth: number;
   fees: FeeYearDetail;
 }
 

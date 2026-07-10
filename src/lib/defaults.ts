@@ -11,6 +11,9 @@ export const DEFAULT_INPUTS: SimulationInputs = {
   pir: 0.28,
   crashYears: 3,
   crashSeed: 1337,
+  crashSeverityMin: 0.1,
+  crashSeverityMax: 0.35,
+  crashOverrides: {},
 };
 
 export const FREQUENCIES: Frequency[] = ['Weekly', 'Fortnightly', 'Monthly', 'Annually'];
