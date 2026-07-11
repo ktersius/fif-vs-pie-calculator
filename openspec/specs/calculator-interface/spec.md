@@ -46,6 +46,44 @@ The system SHALL present a control panel allowing the investor to configure all 
 - **WHEN** the investor drags the minimum severity thumb past the maximum thumb (or vice versa)
 - **THEN** the thumbs are constrained so that `min ≤ max` is always maintained within the 5%–60% outer bounds
 
+### Requirement: Responsive Calculator Layout
+
+The system SHALL present the investor input control panel in a left sidebar alongside the calculator outputs on wider screens, while preserving a single-column controls-first layout on smaller screens.
+
+#### Scenario: Desktop layout shows inputs beside outputs
+
+- **WHEN** the application is viewed on a wide screen
+- **THEN** the control panel is displayed in a left column and the summary, charts, and year-by-year breakdown are displayed in a right content column
+
+#### Scenario: Mobile layout remains stacked
+
+- **WHEN** the application is viewed on a small screen
+- **THEN** the control panel is displayed before the output sections in a single-column layout
+
+#### Scenario: Control panel remains readable in sidebar
+
+- **WHEN** the control panel is displayed in the left sidebar
+- **THEN** its inputs remain full-width within the sidebar so labels, sliders, dropdowns, and hints are readable
+
+### Requirement: Wide-Screen Space Utilization
+
+The system SHALL use available horizontal space on large and high-resolution screens so the calculator layout does not feel unnecessarily squeezed in the center of the viewport.
+
+#### Scenario: High-resolution layout expands beyond the default desktop width
+
+- **WHEN** the application is viewed on a high-resolution screen
+- **THEN** the page shell uses a wider maximum content area than the standard desktop layout while preserving comfortable outer margins
+
+#### Scenario: Results receive primary horizontal space
+
+- **WHEN** the application is viewed in the desktop sidebar layout
+- **THEN** the result column receives the majority of additional horizontal space so charts, summary content, and tables have more room than the control sidebar
+
+#### Scenario: Small-screen layout is unchanged
+
+- **WHEN** the application is viewed on a small screen
+- **THEN** the page remains a single-column layout with the control panel before the output sections
+
 ### Requirement: Crash Severity Adjustment Control
 
 The system SHALL provide a single reusable crash-depth adjustment control that edits the effective depth of one crash year, mounted in two places — the year-by-year breakdown row and the portfolio balance chart marker popover — both writing the same per-year override state so the two surfaces never diverge.

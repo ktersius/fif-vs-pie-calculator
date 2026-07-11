@@ -107,7 +107,7 @@ function DualRange({
 
 export default function ControlPanel({ inputs, crashYearsMax, onChange, onReroll }: Props) {
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-5">
       <Field label="Initial Investment" hint={formatNZD(inputs.initialInvestment)}>
         <Slider
           min={0}
@@ -132,7 +132,7 @@ export default function ControlPanel({ inputs, crashYearsMax, onChange, onReroll
         <select
           value={inputs.frequency}
           onChange={(e) => onChange('frequency', e.target.value as Frequency)}
-          className="rounded border border-slate-300 bg-white px-3 py-2 text-sm"
+          className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm"
         >
           {FREQUENCIES.map((f) => (
             <option key={f} value={f}>
@@ -176,7 +176,7 @@ export default function ControlPanel({ inputs, crashYearsMax, onChange, onReroll
         <select
           value={inputs.marginalRate}
           onChange={(e) => onChange('marginalRate', Number(e.target.value))}
-          className="rounded border border-slate-300 bg-white px-3 py-2 text-sm"
+          className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm"
         >
           {MARGINAL_RATES.map((r) => (
             <option key={r} value={r}>
@@ -190,7 +190,7 @@ export default function ControlPanel({ inputs, crashYearsMax, onChange, onReroll
         <select
           value={inputs.pir}
           onChange={(e) => onChange('pir', Number(e.target.value))}
-          className="rounded border border-slate-300 bg-white px-3 py-2 text-sm"
+          className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm"
         >
           {PIR_RATES.map((r) => (
             <option key={r} value={r}>
@@ -239,7 +239,7 @@ export default function ControlPanel({ inputs, crashYearsMax, onChange, onReroll
         <button
           type="button"
           onClick={onReroll}
-          className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+          className="w-full rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
         >
           Re-roll crash years
         </button>

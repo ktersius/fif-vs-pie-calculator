@@ -66,7 +66,7 @@ export default function App() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-8">
+    <div className="mx-auto max-w-screen-2xl space-y-6 p-4 sm:p-8">
       <header>
         <h1 className="text-2xl font-bold text-slate-900">NZ FIF vs PIE Calculator</h1>
         <p className="mt-1 text-sm text-slate-500">
@@ -75,43 +75,49 @@ export default function App() {
         </p>
       </header>
 
-      <Section title="Control Panel">
-        <ControlPanel
-          inputs={inputs}
-          crashYearsMax={crashYearsMax}
-          onChange={handleChange}
-          onReroll={handleReroll}
-        />
-      </Section>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[18rem_minmax(0,1fr)] xl:grid-cols-[19rem_minmax(0,1fr)] 2xl:grid-cols-[20rem_minmax(0,1fr)]">
+        <aside className="lg:sticky lg:top-8 lg:self-start">
+          <Section title="Control Panel">
+            <ControlPanel
+              inputs={inputs}
+              crashYearsMax={crashYearsMax}
+              onChange={handleChange}
+              onReroll={handleReroll}
+            />
+          </Section>
+        </aside>
 
-      <Section title="Summary">
-        <SummaryDashboard result={result} />
-      </Section>
+        <main className="min-w-0 space-y-6">
+          <Section title="Summary">
+            <SummaryDashboard result={result} />
+          </Section>
 
-      <Section title="Portfolio Balance">
-        <BalanceChart
-          result={result}
-          overrides={inputs.crashOverrides}
-          onSetOverride={handleSetCrashOverride}
-          onResetOverride={handleResetCrashOverride}
-        />
-      </Section>
+          <Section title="Portfolio Balance">
+            <BalanceChart
+              result={result}
+              overrides={inputs.crashOverrides}
+              onSetOverride={handleSetCrashOverride}
+              onResetOverride={handleResetCrashOverride}
+            />
+          </Section>
 
-      <Section title="Tax Drag (per year)">
-        <p className="mb-2 text-xs text-slate-400">Click a bar to open that year's breakdown below.</p>
-        <TaxDragChart result={result} onSelectYear={setExpandedYear} />
-      </Section>
+          <Section title="Tax Drag (per year)">
+            <p className="mb-2 text-xs text-slate-400">Click a bar to open that year's breakdown below.</p>
+            <TaxDragChart result={result} onSelectYear={setExpandedYear} />
+          </Section>
 
-      <Section title="Year-by-Year Breakdown">
-        <BreakdownTable
-          result={result}
-          expandedYear={expandedYear}
-          onToggle={handleToggleYear}
-          overrides={inputs.crashOverrides}
-          onSetOverride={handleSetCrashOverride}
-          onResetOverride={handleResetCrashOverride}
-        />
-      </Section>
+          <Section title="Year-by-Year Breakdown">
+            <BreakdownTable
+              result={result}
+              expandedYear={expandedYear}
+              onToggle={handleToggleYear}
+              overrides={inputs.crashOverrides}
+              onSetOverride={handleSetCrashOverride}
+              onResetOverride={handleResetCrashOverride}
+            />
+          </Section>
+        </main>
+      </div>
 
       <footer className="pb-8 text-center text-xs text-slate-400">
         Illustrative model only — not financial or tax advice. Assumes fixed constants per the
