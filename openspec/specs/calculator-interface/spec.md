@@ -19,11 +19,12 @@ The system SHALL present a control panel allowing the investor to configure all 
 - Marginal Income Tax Rate: dropdown [10.5%, 17.5%, 30%, 33%, 39%] (default 39%).
 - PIE PIR: dropdown [10.5%, 17.5%, 28%] (default 28%).
 - Number of Crash Years: 0 to the lesser of 5 and the investment horizon (default 3).
+- Crash Severity Band: a dual-thumb range slider in positive drop percentage, outer bounds 5% to 60% (default 10%–35%), with the guardrail that the minimum thumb never exceeds the maximum thumb. When the two thumbs coincide, all crash defaults collapse to that single depth.
 
 #### Scenario: Defaults on first load
 
 - **WHEN** the application first loads
-- **THEN** every input displays its specified default value, including a 20-year investment horizon
+- **THEN** every input displays its specified default value, including a 20-year investment horizon and a 10%–35% crash severity band
 
 #### Scenario: Input change re-runs the simulation
 
@@ -39,6 +40,32 @@ The system SHALL present a control panel allowing the investor to configure all 
 
 - **WHEN** the investor sets an investment horizon shorter than the current number of crash years
 - **THEN** the number of crash years is clamped to the investment horizon so crash years never exceed the number of simulated years
+
+#### Scenario: Severity band thumbs cannot cross
+
+- **WHEN** the investor drags the minimum severity thumb past the maximum thumb (or vice versa)
+- **THEN** the thumbs are constrained so that `min ≤ max` is always maintained within the 5%–60% outer bounds
+
+### Requirement: Crash Severity Adjustment Control
+
+The system SHALL provide a single reusable crash-depth adjustment control that edits the effective depth of one crash year, mounted in two places — the year-by-year breakdown row and the portfolio balance chart marker popover — both writing the same per-year override state so the two surfaces never diverge.
+
+The control SHALL let the investor move a crash's depth across the outer bounds (5% to 60% drop), display the current effective depth, indicate whether the value is a band default or a manual override, and offer a reset to the band default. Adjusting the control SHALL re-run the simulation and update all outputs live.
+
+#### Scenario: Adjusting a crash updates the simulation live
+
+- **WHEN** the investor moves the crash-depth control for a given year
+- **THEN** that year's effective depth changes and the charts, summary, and breakdown recompute immediately
+
+#### Scenario: Both surfaces stay in sync
+
+- **WHEN** the investor adjusts a crash's depth from the balance-chart popover and then opens that year's breakdown row
+- **THEN** the breakdown row shows the same adjusted depth, because both surfaces edit one shared override state
+
+#### Scenario: Reset control reverts to the band default
+
+- **WHEN** a crash's depth has been manually overridden and the investor activates its reset control
+- **THEN** the depth reverts to the band-generated default and the override indicator clears
 
 ### Requirement: Crash Year Re-roll Control
 
@@ -56,12 +83,31 @@ The system SHALL provide an explicit "Re-roll crash years" control that recomput
 
 ### Requirement: Portfolio Balance Chart
 
-The system SHALL render a line or area chart mapping year (X-axis) to portfolio balance (Y-axis) for both the InvestNow and IBKR portfolios.
+The system SHALL render a line or area chart mapping year (X-axis) to portfolio balance (Y-axis) for both the InvestNow and IBKR portfolios, and SHALL mark crash years on the chart with an interactive indicator for inspecting and adjusting each crash's depth.
+
+- A crash marker SHALL be rendered at each crash year's position.
+- Hovering a crash marker SHALL reveal that year's effective crash depth.
+- Clicking a crash marker SHALL open a popover hosting the shared crash-depth adjustment control (slider plus reset) for that year.
 
 #### Scenario: Both portfolios plotted over the horizon
 
 - **WHEN** the simulation completes
 - **THEN** the chart shows one series per platform across Year 0 through the final year of the investment horizon with balances on the Y-axis
+
+#### Scenario: Crash markers rendered at crash years
+
+- **WHEN** the simulation has one or more crash years
+- **THEN** a crash marker appears at each crash year's position on the balance chart
+
+#### Scenario: Hovering a marker reveals its depth
+
+- **WHEN** the investor hovers a crash marker
+- **THEN** the marker reveals that crash year's effective depth
+
+#### Scenario: Clicking a marker opens the adjustment control
+
+- **WHEN** the investor clicks a crash marker
+- **THEN** a popover opens containing the shared crash-depth slider and reset for that year, and adjusting it re-runs the simulation
 
 ### Requirement: Tax Drag Chart
 
@@ -109,7 +155,7 @@ Fee detail per year SHALL show a representative single-order breakdown rather th
 - InvestNow: the annual contribution and the aggregate 0.50% buy fee, plus the management fee for the year.
 - Year 0 SHALL show the one-off initial-investment order breakdown, and the final horizon year SHALL show the one-off exit-fee breakdown.
 
-Crash years SHALL be visually flagged in the breakdown.
+Crash years SHALL be visually flagged in the breakdown, SHALL display the effective crash depth for that year (e.g. `crash −38%`), and SHALL host the shared crash-depth adjustment control (slider plus reset) inline so the investor can change that crash's depth from the row.
 
 #### Scenario: Expand a year to view tax breakdown
 
@@ -130,6 +176,11 @@ Crash years SHALL be visually flagged in the breakdown.
 
 - **WHEN** the investor clicks a bar for a given year in the tax drag chart
 - **THEN** the breakdown table expands (or scrolls to) that year's row
+
+#### Scenario: Crash row shows and adjusts depth
+
+- **WHEN** the investor expands a crash year's row
+- **THEN** the row displays the effective crash depth and provides the shared crash-depth control to adjust or reset it, updating the simulation on change
 
 ### Requirement: NZD Currency and Percentage Formatting
 
