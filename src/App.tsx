@@ -4,6 +4,7 @@ import BreakdownTable from './components/BreakdownTable';
 import ControlPanel from './components/ControlPanel';
 import SummaryDashboard from './components/SummaryDashboard';
 import TaxDragChart from './components/TaxDragChart';
+import { trackEvent } from './lib/analytics';
 import { CRASH_SEVERITY_OUTER_MAX, CRASH_SEVERITY_OUTER_MIN, MAX_CRASH_YEARS } from './lib/constants';
 import { DEFAULT_INPUTS, newSeed } from './lib/defaults';
 import { runSimulation } from './lib/simulation';
@@ -39,10 +40,12 @@ export default function App() {
   }
 
   function handleReroll() {
+    trackEvent('rerollCrashYears');
     setInputs((prev) => ({ ...prev, crashSeed: newSeed(), crashOverrides: {} }));
   }
 
   function handleSetCrashOverride(year: number, depth: number) {
+    trackEvent('adjustCrashDepth');
     const clamped = Math.max(
       CRASH_SEVERITY_OUTER_MIN,
       Math.min(CRASH_SEVERITY_OUTER_MAX, depth),
@@ -62,7 +65,15 @@ export default function App() {
   }
 
   function handleToggleYear(year: number) {
-    setExpandedYear((prev) => (prev === year ? null : year));
+    if (expandedYear !== year) {
+      trackEvent('expandYearBreakdown');
+    }
+    setExpandedYear(expandedYear === year ? null : year);
+  }
+
+  function handleSelectTaxChartYear(year: number) {
+    trackEvent('clickTaxChartYear');
+    setExpandedYear(year);
   }
 
   return (
@@ -103,7 +114,7 @@ export default function App() {
 
           <Section title="Tax Drag (per year)">
             <p className="mb-2 text-xs text-slate-400">Click a bar to open that year's breakdown below.</p>
-            <TaxDragChart result={result} onSelectYear={setExpandedYear} />
+            <TaxDragChart result={result} onSelectYear={handleSelectTaxChartYear} />
           </Section>
 
           <Section title="Year-by-Year Breakdown">

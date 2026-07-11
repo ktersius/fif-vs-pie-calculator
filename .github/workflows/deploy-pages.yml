@@ -1,5 +1,8 @@
 name: Deploy GitHub Pages
 
+env:
+  VITE_GOATCOUNTER_ENDPOINT: https://ktersius.goatcounter.com/count
+
 on:
   push:
     branches:

@@ -58,6 +58,18 @@ Run tests:
 npm test
 ```
 
+## Analytics
+
+The deployed site uses GoatCounter for privacy-conscious analytics when `VITE_GOATCOUNTER_ENDPOINT` is configured at build time:
+
+```text
+VITE_GOATCOUNTER_ENDPOINT=https://ktersius.goatcounter.com/count
+```
+
+Analytics tracks pageviews and a small set of anonymous interaction events, such as re-rolling crash years, adjusting crash depth, expanding a year breakdown, and selecting a tax chart year.
+
+The app does not send investment amounts, contribution values, tax rates, balances, calculated results, or per-year simulation values to GoatCounter.
+
 ## Deployment
 
 The app is configured for GitHub Pages project-site hosting at:
