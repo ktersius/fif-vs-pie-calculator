@@ -178,8 +178,8 @@ export default function BreakdownTable({
   onResetOverride,
 }: Props) {
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200">
-      <table className="w-full text-sm">
+    <div className="max-w-full overflow-x-auto rounded-lg border border-slate-200">
+      <table className="w-full min-w-[44rem] text-sm">
         <thead className="bg-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
           <tr>
             <th className="px-3 py-2">Year</th>
