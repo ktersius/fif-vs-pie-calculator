@@ -43,3 +43,10 @@ The system SHALL keep calculator behavior independent from GoatCounter availabil
 #### Scenario: GoatCounter script fails to load
 - **WHEN** the GoatCounter script is blocked or fails to load
 - **THEN** the calculator SHALL remain usable and interactions SHALL continue to update simulation outputs normally
+
+### Requirement: Analytics events are debounced
+The system SHALL debounce custom analytics events by event type before sending them to GoatCounter.
+
+#### Scenario: Repeated interaction occurs rapidly
+- **WHEN** the same tracked interaction fires repeatedly within the debounce window
+- **THEN** the system SHALL send at most one GoatCounter event for that interaction type after the rapid sequence settles

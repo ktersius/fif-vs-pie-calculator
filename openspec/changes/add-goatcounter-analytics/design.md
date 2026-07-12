@@ -38,7 +38,7 @@ GoatCounter is a lightweight privacy-conscious analytics option that supports au
 
 4. Centralize custom event tracking behind a helper.
 
-   A small analytics helper should expose named event tracking functions or a typed `trackEvent` wrapper. UI code should call that helper rather than directly referencing `window.goatcounter`, keeping event names consistent and making analytics no-op behavior testable.
+   A small analytics helper should expose named event tracking functions or a typed `trackEvent` wrapper. UI code should call that helper rather than directly referencing `window.goatcounter`, keeping event names consistent and making analytics no-op behavior testable. The helper should debounce events by event name so rapid interactions, such as dragging a crash-depth slider, do not send excessive GoatCounter requests.
 
 5. Track only anonymous interaction categories.
 
@@ -55,4 +55,5 @@ GoatCounter is a lightweight privacy-conscious analytics option that supports au
 - Analytics endpoint not configured -> Pageviews and events are not sent; document the required environment variable and keep the app functional.
 - Ad blockers block GoatCounter -> Analytics undercounts usage; accept this as a privacy-friendly analytics trade-off.
 - Custom events become too granular over time -> Keep a documented allowlist of event names and avoid values/payloads.
+- Rapid repeated interactions trigger GoatCounter rate limiting -> Debounce event sends per event name before calling GoatCounter.
 - External script load failure -> GoatCounter should fail open; the calculator must continue to load and function.

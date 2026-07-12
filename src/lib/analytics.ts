@@ -1,5 +1,6 @@
 const goatCounterEndpoint = import.meta.env.VITE_GOATCOUNTER_ENDPOINT;
 const goatCounterScriptId = 'goatcounter-script';
+const analyticsEventDebounceMs = 1_000;
 
 export const analyticsEvents = {
   rerollCrashYears: {
@@ -22,6 +23,8 @@ export const analyticsEvents = {
 
 export type AnalyticsEvent = keyof typeof analyticsEvents;
 
+const eventTimers: Partial<Record<AnalyticsEvent, number>> = {};
+
 export function initializeAnalytics() {
   if (!goatCounterEndpoint || document.getElementById(goatCounterScriptId)) {
     return;
@@ -37,9 +40,12 @@ export function initializeAnalytics() {
 
 export function trackEvent(event: AnalyticsEvent) {
   const details = analyticsEvents[event];
-  try {
-    window.goatcounter?.count(details);
-  } catch (error) {
-    console.warn('GoatCounter analytics event failed', error);
-  }
+  window.clearTimeout(eventTimers[event]);
+  eventTimers[event] = window.setTimeout(() => {
+    try {
+      window.goatcounter?.count(details);
+    } catch (error) {
+      console.warn('GoatCounter analytics event failed', error);
+    }
+  }, analyticsEventDebounceMs);
 }

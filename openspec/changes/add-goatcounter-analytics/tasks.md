@@ -7,6 +7,7 @@
 
 - [x] 2.1 Add a small analytics helper that wraps `window.goatcounter.count(...)` and no-ops when GoatCounter is unavailable.
 - [x] 2.2 Define an allowlist of supported anonymous event paths for the initial calculator interactions.
+- [x] 2.3 Debounce analytics events by event name before sending them to GoatCounter.
 
 ## 3. Calculator Interaction Events
 
