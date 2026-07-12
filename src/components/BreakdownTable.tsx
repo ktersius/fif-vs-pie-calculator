@@ -228,17 +228,30 @@ export default function BreakdownTable({
                   <td className="w-8 px-1 py-2 text-right text-slate-400 sm:w-auto sm:px-3">{expanded ? '▲' : '▼'}</td>
                 </tr>
                 {expanded ? (
-                  <tr key={`detail-${inv.year}`}>
-                    <td colSpan={6} className="p-0">
-                      <ExpandedYear
-                        inv={inv}
-                        ibkr={ibkr}
-                        overrides={overrides}
-                        onSetOverride={onSetOverride}
-                        onResetOverride={onResetOverride}
-                      />
-                    </td>
-                  </tr>
+                  <>
+                    <tr key={`detail-mobile-${inv.year}`} className="sm:hidden">
+                      <td colSpan={4} className="p-0">
+                        <ExpandedYear
+                          inv={inv}
+                          ibkr={ibkr}
+                          overrides={overrides}
+                          onSetOverride={onSetOverride}
+                          onResetOverride={onResetOverride}
+                        />
+                      </td>
+                    </tr>
+                    <tr key={`detail-desktop-${inv.year}`} className="hidden sm:table-row">
+                      <td colSpan={6} className="p-0">
+                        <ExpandedYear
+                          inv={inv}
+                          ibkr={ibkr}
+                          overrides={overrides}
+                          onSetOverride={onSetOverride}
+                          onResetOverride={onResetOverride}
+                        />
+                      </td>
+                    </tr>
+                  </>
                 ) : null}
               </Fragment>
             );
