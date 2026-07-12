@@ -220,6 +220,78 @@ Crash years SHALL be visually flagged in the breakdown, SHALL display the effect
 - **WHEN** the investor expands a crash year's row
 - **THEN** the row displays the effective crash depth and provides the shared crash-depth control to adjust or reset it, updating the simulation on change
 
+### Requirement: Mobile Breakdown Table Accessibility
+
+The system SHALL ensure the year-by-year breakdown table remains accessible on small screens when its visible columns exceed the available horizontal space. Visible columns SHALL be reachable within the breakdown section without clipping content or requiring page-level horizontal scrolling.
+
+#### Scenario: Narrow screen exposes visible breakdown columns
+
+- **WHEN** the application is viewed on a small screen and the year-by-year breakdown table is wider than its container
+- **THEN** the investor can access every visible table column, including the year, crash indicator when present, both tax columns, and the expand/collapse control
+
+#### Scenario: Desktop breakdown layout remains unchanged
+
+- **WHEN** the application is viewed on a wide screen
+- **THEN** the year-by-year breakdown continues to display as a full-width table within the results column with the desktop columns and row expansion behavior
+
+#### Scenario: Expanded rows remain usable after horizontal access
+
+- **WHEN** the investor expands a year from the breakdown table on a small screen
+- **THEN** the expanded tax, fee, and crash-depth detail remains visible within the breakdown section and does not cause hidden page-level overflow
+
+### Requirement: Mobile Breakdown Compact Columns
+
+The system SHALL simplify the year-by-year breakdown table on small screens by hiding the `InvestNow balance` and `IBKR balance` columns. The compact mobile table SHALL continue to show the year, crash-year indicator when present, InvestNow tax, IBKR tax, and expand/collapse control.
+
+#### Scenario: Mobile breakdown hides balance columns
+
+- **WHEN** the application is viewed on a small screen
+- **THEN** the year-by-year breakdown table does not display the `InvestNow balance` or `IBKR balance` columns
+- **AND** the table still displays the year, InvestNow tax, IBKR tax, and expand/collapse control
+
+#### Scenario: Desktop breakdown shows balance columns
+
+- **WHEN** the application is viewed on a wide screen
+- **THEN** the year-by-year breakdown table displays both platform balance columns along with the existing tax columns and expand/collapse control
+
+#### Scenario: Mobile row expansion remains available
+
+- **WHEN** the investor expands a year from the mobile breakdown table
+- **THEN** the expanded tax, fee, and crash-depth detail remains available for that year
+
+### Requirement: Compact Breakdown Year Column
+
+The system SHALL keep the Year column in the year-by-year breakdown table compact so it does not consume unnecessary horizontal space in the mobile table. The Year column SHALL continue to show the year number and crash-year indicator when applicable.
+
+#### Scenario: Mobile year column preserves space
+
+- **WHEN** the application is viewed on a small screen
+- **THEN** the year-by-year breakdown table uses a compact Year column so the tax and expand/collapse columns receive more available horizontal space
+
+#### Scenario: Crash indicator remains visible
+
+- **WHEN** a crash year appears in the mobile breakdown table
+- **THEN** the Year column still identifies the row as a crash year and displays the effective crash depth in a readable compact form
+
+#### Scenario: Desktop table remains readable
+
+- **WHEN** the application is viewed on a wide screen
+- **THEN** the Year column remains readable and the breakdown table preserves its desktop columns and row expansion behavior
+
+### Requirement: Mobile Section Space Efficiency
+
+The system SHALL use compact section-card spacing on small screens so borders, padding, rounding, and shadows do not unnecessarily reduce usable content width. Wider screens SHALL preserve comfortable card spacing and visual separation.
+
+#### Scenario: Mobile sections preserve content width
+
+- **WHEN** the application is viewed on a small screen
+- **THEN** output sections use reduced padding and lightweight card chrome so tables and charts receive more horizontal space
+
+#### Scenario: Desktop sections preserve comfortable spacing
+
+- **WHEN** the application is viewed on a wide screen
+- **THEN** output sections retain the larger padding, rounded corners, and subtle shadow used by the desktop layout
+
 ### Requirement: NZD Currency and Percentage Formatting
 
 The system SHALL format all monetary values as New Zealand Dollars and all rates as percentages for display, without mutating the underlying computed values.
