@@ -179,12 +179,12 @@ export default function BreakdownTable({
 }: Props) {
   return (
     <div className="max-w-full overflow-x-auto rounded-lg border border-slate-200">
-      <table className="w-full min-w-[44rem] text-sm">
+      <table className="w-full min-w-[24rem] text-sm sm:min-w-[44rem]">
         <thead className="bg-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
           <tr>
             <th className="px-3 py-2">Year</th>
-            <th className="px-3 py-2 text-right">InvestNow balance</th>
-            <th className="px-3 py-2 text-right">IBKR balance</th>
+            <th className="hidden px-3 py-2 text-right sm:table-cell">InvestNow balance</th>
+            <th className="hidden px-3 py-2 text-right sm:table-cell">IBKR balance</th>
             <th className="px-3 py-2 text-right">InvestNow tax</th>
             <th className="px-3 py-2 text-right">IBKR tax</th>
             <th className="px-3 py-2" />
@@ -211,8 +211,8 @@ export default function BreakdownTable({
                       </span>
                     ) : null}
                   </td>
-                  <td className="px-3 py-2 text-right tabular-nums">{formatNZD(inv.closingBalance)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{formatNZD(ibkr.closingBalance)}</td>
+                  <td className="hidden px-3 py-2 text-right tabular-nums sm:table-cell">{formatNZD(inv.closingBalance)}</td>
+                  <td className="hidden px-3 py-2 text-right tabular-nums sm:table-cell">{formatNZD(ibkr.closingBalance)}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{formatNZD(inv.tax)}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{formatNZD(ibkr.tax)}</td>
                   <td className="px-3 py-2 text-right text-slate-400">{expanded ? '▲' : '▼'}</td>
