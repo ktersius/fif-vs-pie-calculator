@@ -12,8 +12,8 @@ import type { SimulationInputs } from './lib/types';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold text-slate-800">{title}</h2>
+    <section className="rounded-md border border-slate-200 bg-white p-2 sm:rounded-xl sm:p-5 sm:shadow-sm">
+      <h2 className="mb-2 text-lg font-semibold text-slate-800 sm:mb-4">{title}</h2>
       {children}
     </section>
   );
