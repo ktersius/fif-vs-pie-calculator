@@ -5,7 +5,7 @@ A web-based calculator for comparing two New Zealand investment approaches:
 - an InvestNow Foundation Series PIE fund
 - a direct US ETF portfolio held through Interactive Brokers
 
-The app models portfolio growth, platform fees, dividend withholding tax, New Zealand tax treatment, and crash-year scenarios over a configurable investment horizon. It is intended as an illustrative comparison tool, not financial or tax advice.
+The app replays historical S&P 500 price and dividend returns while modelling platform fees, dividend withholding tax, and New Zealand tax treatment over a configurable investment horizon. It is intended as an illustrative comparison tool, not financial or tax advice.
 
 ## What it compares
 
@@ -17,9 +17,9 @@ For the Interactive Brokers scenario, the model tracks the FIF de minimis thresh
 
 ## Features
 
-- Configurable initial investment, periodic contributions, contribution frequency, investment horizon, market return, dividend yield, marginal tax rate, and PIR.
-- Deterministic crash-year modelling with re-rollable crash placement.
-- Adjustable crash severity band and per-crash manual overrides.
+- Configurable initial investment, periodic contributions, contribution frequency, investment horizon, historical period, marginal tax rate, and PIR.
+- Contiguous historical S&P 500 price and dividend returns from 1957 onward.
+- A horizon-locked historical period slider that defaults to the latest completed years.
 - Summary dashboard for final balances, total NZ tax paid, and itemised fees.
 - Portfolio balance chart comparing both platforms over time.
 - Tax drag chart showing annual tax paid by platform.
@@ -66,9 +66,15 @@ The deployed site uses GoatCounter for privacy-conscious analytics when `VITE_GO
 VITE_GOATCOUNTER_ENDPOINT=https://ktersius.goatcounter.com/count
 ```
 
-Analytics tracks pageviews and a small set of anonymous interaction events, such as re-rolling crash years, adjusting crash depth, expanding a year breakdown, and selecting a tax chart year.
+Analytics tracks pageviews and a small set of anonymous interaction events, such as expanding a year breakdown and selecting a tax chart year.
 
 The app does not send investment amounts, contribution values, tax rates, balances, calculated results, or per-year simulation values to GoatCounter.
+
+## Historical market data
+
+Annual S&P 500 price and dividend returns are stored in the repository and sourced from [SlickCharts](https://www.slickcharts.com/sp500/returns/details). The dataset begins in 1957 and is updated manually after each calendar year closes; partial-year returns are not used.
+
+The simulation retains its existing annual timing approximation: the full net annual contribution participates in the full calendar year's price and dividend returns, even when the selected contribution frequency is weekly, fortnightly, or monthly.
 
 ## Deployment
 

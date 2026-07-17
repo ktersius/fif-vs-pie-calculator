@@ -8,7 +8,7 @@ describe('PIE FDR tax', () => {
     expect(detail.taxOwed).toBeCloseTo(1_400, 6);
   });
 
-  it('is levied even in a crash year (depends only on opening balance and PIR)', () => {
+  it('is levied even in a negative historical year (depends only on opening balance and PIR)', () => {
     // Same opening balance yields the same PIE tax regardless of market return.
     const detail = pieTax(200_000, 0.28);
     expect(detail.taxOwed).toBeCloseTo(2_800, 6);
@@ -62,12 +62,12 @@ describe('FIF FDR vs CV selection', () => {
     expect(detail.fdrNetTax).toBeCloseTo(3_450, 6);
   });
 
-  it('gives the CV advantage in a crash year (CV income floored at zero)', () => {
+  it('gives the CV advantage in a negative historical year (CV income floored at zero)', () => {
     const detail = fifTax({
       costBase: 200_000,
       openingBalance: 200_000,
       grossDividends: 3_000,
-      growth: -30_000, // crash
+      growth: -30_000,
       managementFee: 40,
       marginalRate: 0.39,
     });

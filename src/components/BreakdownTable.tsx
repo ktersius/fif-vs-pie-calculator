@@ -9,15 +9,11 @@ import type {
   PieTaxDetail,
   SimulationResult,
 } from '../lib/types';
-import CrashDepthControl from './CrashDepthControl';
 
 interface Props {
   result: SimulationResult;
   expandedYear: number | null;
   onToggle: (year: number) => void;
-  overrides: Record<number, number>;
-  onSetOverride: (year: number, depth: number) => void;
-  onResetOverride: (year: number) => void;
 }
 
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
@@ -127,30 +123,18 @@ function FeePanel({ fees }: { fees: FeeYearDetail }) {
   );
 }
 
-function ExpandedYear({
-  inv,
-  ibkr,
-  overrides,
-  onSetOverride,
-  onResetOverride,
-}: {
+function ExpandedYear({ inv, ibkr }: {
   inv: InvestNowYearRecord;
   ibkr: IbkrYearRecord;
-  overrides: Record<number, number>;
-  onSetOverride: (year: number, depth: number) => void;
-  onResetOverride: (year: number) => void;
 }) {
   return (
     <div className="border-t border-slate-200 bg-white p-4">
-      {inv.isCrashYear ? (
-        <div className="mb-4 max-w-sm rounded border border-red-200 bg-red-50 p-3">
-          <CrashDepthControl
-            year={inv.year}
-            depth={ibkr.crashDepth}
-            isOverride={overrides[inv.year] !== undefined}
-            onChange={onSetOverride}
-            onReset={onResetOverride}
-          />
+      {inv.calendarYear ? (
+        <div className="mb-4 max-w-sm">
+          <Panel title={`${inv.calendarYear} historical returns`}>
+            <Row label="Price return" value={formatPercent(inv.priceReturn)} />
+            <Row label="Dividend return" value={formatPercent(inv.dividendReturn)} />
+          </Panel>
         </div>
       ) : null}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -173,16 +157,14 @@ export default function BreakdownTable({
   result,
   expandedYear,
   onToggle,
-  overrides,
-  onSetOverride,
-  onResetOverride,
 }: Props) {
   return (
     <div className="max-w-full overflow-x-auto rounded-lg border border-slate-200">
       <table className="w-full table-fixed text-sm sm:min-w-[44rem] sm:table-auto">
         <thead className="bg-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
           <tr>
-            <th className="w-12 px-2 py-2 sm:w-auto sm:px-3">Year</th>
+            <th className="w-20 px-2 py-2 sm:w-auto sm:px-3">Year</th>
+            <th className="w-16 px-1 py-2 text-right sm:w-auto sm:px-3">Return</th>
             <th className="hidden px-3 py-2 text-right sm:table-cell">InvestNow balance</th>
             <th className="hidden px-3 py-2 text-right sm:table-cell">IBKR balance</th>
             <th className="px-2 py-2 text-right sm:px-3" aria-label="InvestNow tax">
@@ -209,17 +191,14 @@ export default function BreakdownTable({
                   }`}
                   onClick={() => onToggle(inv.year)}
                 >
-                  <td className="w-12 px-2 py-2 font-medium text-slate-700 sm:w-auto sm:px-3">
-                    {inv.year}
-                    {inv.isCrashYear ? (
-                      <span
-                        className="mt-1 block w-fit whitespace-nowrap rounded bg-red-100 px-1 py-0.5 text-[0.65rem] font-semibold leading-none text-red-700 sm:ml-2 sm:mt-0 sm:inline-block sm:px-1.5 sm:text-xs sm:leading-normal"
-                        aria-label={`crash −${formatPercent(ibkr.crashDepth)}`}
-                      >
-                        <span className="sm:hidden">−{formatPercent(ibkr.crashDepth)}</span>
-                        <span className="hidden sm:inline">crash −{formatPercent(ibkr.crashDepth)}</span>
-                      </span>
-                    ) : null}
+                  <td className="w-20 px-2 py-2 font-medium text-slate-700 sm:w-auto sm:px-3">
+                    <span className="block">{inv.calendarYear ?? 'Initial'}</span>
+                    <span className="block text-[0.65rem] font-normal text-slate-400 sm:inline sm:text-xs">
+                      Year {inv.year}
+                    </span>
+                  </td>
+                  <td className="w-16 px-1 py-2 text-right tabular-nums sm:w-auto sm:px-3">
+                    {inv.calendarYear ? formatPercent(inv.priceReturn) : '—'}
                   </td>
                   <td className="hidden px-3 py-2 text-right tabular-nums sm:table-cell">{formatNZD(inv.closingBalance)}</td>
                   <td className="hidden px-3 py-2 text-right tabular-nums sm:table-cell">{formatNZD(ibkr.closingBalance)}</td>
@@ -230,25 +209,13 @@ export default function BreakdownTable({
                 {expanded ? (
                   <>
                     <tr key={`detail-mobile-${inv.year}`} className="sm:hidden">
-                      <td colSpan={4} className="p-0">
-                        <ExpandedYear
-                          inv={inv}
-                          ibkr={ibkr}
-                          overrides={overrides}
-                          onSetOverride={onSetOverride}
-                          onResetOverride={onResetOverride}
-                        />
+                      <td colSpan={5} className="p-0">
+                        <ExpandedYear inv={inv} ibkr={ibkr} />
                       </td>
                     </tr>
                     <tr key={`detail-desktop-${inv.year}`} className="hidden sm:table-row">
-                      <td colSpan={6} className="p-0">
-                        <ExpandedYear
-                          inv={inv}
-                          ibkr={ibkr}
-                          overrides={overrides}
-                          onSetOverride={onSetOverride}
-                          onResetOverride={onResetOverride}
-                        />
+                      <td colSpan={7} className="p-0">
+                        <ExpandedYear inv={inv} ibkr={ibkr} />
                       </td>
                     </tr>
                   </>

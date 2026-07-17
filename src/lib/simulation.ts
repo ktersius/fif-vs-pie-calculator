@@ -2,10 +2,7 @@ import {
   FREQUENCY_INSTANCES,
   MANAGEMENT_FEE_RATE,
   WITHHOLDING_TAX_RATE,
-  CRASH_SEVERITY_OUTER_MIN,
-  CRASH_SEVERITY_OUTER_MAX,
 } from './constants';
-import { effectiveCrashDepth, selectCrashYears } from './crash';
 import {
   ibkrBrokerageFee,
   ibkrFxFee,
@@ -13,6 +10,7 @@ import {
   investNowBuyFee,
   investNowSellFee,
 } from './fees';
+import { getHistoricalWindow, type HistoricalMarketYear } from './historicalMarketData';
 import { fifTax, pieTax } from './tax';
 import type {
   FeeSummary,
@@ -30,11 +28,9 @@ function emptyFeeSummary(): FeeSummary {
 /** Simulate the InvestNow (PIE) portfolio across the horizon. */
 function simulateInvestNow(
   inputs: SimulationInputs,
-  crashSet: Set<number>,
-  crashDepths: Map<number, number>,
+  marketYears: HistoricalMarketYear[],
 ): { records: InvestNowYearRecord[]; fees: FeeSummary; totalTax: number } {
-  const { initialInvestment, periodicContribution, frequency, horizonYears, marketReturn, dividendYield, pir } =
-    inputs;
+  const { initialInvestment, periodicContribution, frequency, horizonYears, pir } = inputs;
   const instances = FREQUENCY_INSTANCES[frequency];
   const fees = emptyFeeSummary();
   let totalTax = 0;
@@ -47,6 +43,9 @@ function simulateInvestNow(
   const records: InvestNowYearRecord[] = [
     {
       year: 0,
+      calendarYear: null,
+      priceReturn: 0,
+      dividendReturn: 0,
       openingBalance: initialInvestment,
       netAnnualContribution: balance,
       growth: 0,
@@ -55,8 +54,6 @@ function simulateInvestNow(
       managementFee: 0,
       tax: 0,
       closingBalance: balance,
-      isCrashYear: false,
-      crashDepth: 0,
       taxDetail: null,
       fees: {
         orderCount: 0,
@@ -72,17 +69,15 @@ function simulateInvestNow(
 
   for (let year = 1; year <= horizonYears; year++) {
     const opening = balance;
-    const isCrash = crashSet.has(year);
-    const crashDepth = isCrash ? (crashDepths.get(year) ?? 0) : 0;
+    const marketYear = marketYears[year - 1];
 
     const totalContribution = periodicContribution * instances;
     const buyFee = investNowBuyFee(totalContribution);
     const netContribution = totalContribution - buyFee;
 
     const base = opening + netContribution;
-    const rate = isCrash ? -crashDepth : marketReturn;
-    const growth = base * rate;
-    const grossDividends = base * dividendYield;
+    const growth = base * marketYear.priceReturn;
+    const grossDividends = base * marketYear.dividendReturn;
     const netDividends = grossDividends * (1 - WITHHOLDING_TAX_RATE);
 
     let temp = base + growth + netDividends;
@@ -131,6 +126,9 @@ function simulateInvestNow(
 
     records.push({
       year,
+      calendarYear: marketYear.year,
+      priceReturn: marketYear.priceReturn,
+      dividendReturn: marketYear.dividendReturn,
       openingBalance: opening,
       netAnnualContribution: netContribution,
       growth,
@@ -139,8 +137,6 @@ function simulateInvestNow(
       managementFee,
       tax,
       closingBalance: closing,
-      isCrashYear: isCrash,
-      crashDepth,
       taxDetail,
       fees: {
         representativeOrder,
@@ -162,11 +158,9 @@ function simulateInvestNow(
 /** Simulate the IBKR (direct FIF) portfolio across the horizon. */
 function simulateIbkr(
   inputs: SimulationInputs,
-  crashSet: Set<number>,
-  crashDepths: Map<number, number>,
+  marketYears: HistoricalMarketYear[],
 ): { records: IbkrYearRecord[]; fees: FeeSummary; totalTax: number } {
-  const { initialInvestment, periodicContribution, frequency, horizonYears, marketReturn, dividendYield, marginalRate } =
-    inputs;
+  const { initialInvestment, periodicContribution, frequency, horizonYears, marginalRate } = inputs;
   const instances = FREQUENCY_INSTANCES[frequency];
   const fees = emptyFeeSummary();
   let totalTax = 0;
@@ -181,6 +175,9 @@ function simulateIbkr(
   const records: IbkrYearRecord[] = [
     {
       year: 0,
+      calendarYear: null,
+      priceReturn: 0,
+      dividendReturn: 0,
       openingBalance: initialInvestment,
       netAnnualContribution: balance,
       growth: 0,
@@ -189,8 +186,6 @@ function simulateIbkr(
       managementFee: 0,
       tax: 0,
       closingBalance: balance,
-      isCrashYear: false,
-      crashDepth: 0,
       taxDetail: null,
       fees: {
         orderCount: 0,
@@ -206,8 +201,7 @@ function simulateIbkr(
 
   for (let year = 1; year <= horizonYears; year++) {
     const opening = balance;
-    const isCrash = crashSet.has(year);
-    const crashDepth = isCrash ? (crashDepths.get(year) ?? 0) : 0;
+    const marketYear = marketYears[year - 1];
 
     // Per-instance fee loop.
     let netContribution = 0;
@@ -224,9 +218,8 @@ function simulateIbkr(
     costBase += netContribution; // net contributions added to cost base
 
     const base = opening + netContribution;
-    const rate = isCrash ? -crashDepth : marketReturn;
-    const growth = base * rate;
-    const grossDividends = base * dividendYield;
+    const growth = base * marketYear.priceReturn;
+    const grossDividends = base * marketYear.dividendReturn;
     const netDividends = grossDividends * (1 - WITHHOLDING_TAX_RATE);
 
     let temp = base + growth + netDividends;
@@ -273,6 +266,9 @@ function simulateIbkr(
 
     records.push({
       year,
+      calendarYear: marketYear.year,
+      priceReturn: marketYear.priceReturn,
+      dividendReturn: marketYear.dividendReturn,
       openingBalance: opening,
       netAnnualContribution: netContribution,
       growth,
@@ -281,8 +277,6 @@ function simulateIbkr(
       managementFee,
       tax,
       closingBalance: closing,
-      isCrashYear: isCrash,
-      crashDepth,
       taxDetail,
       fees: {
         representativeOrder: perOrder,
@@ -304,38 +298,20 @@ function simulateIbkr(
 /**
  * Run the full 20-year (configurable) comparison. Returns per-year records for
  * both platforms plus aggregate summaries. Deterministic for a given set of
- * inputs (crash years derive from `crashSeed`).
+ * inputs and historical period.
  */
 export function runSimulation(inputs: SimulationInputs): SimulationResult {
-  const crashYears = selectCrashYears(inputs.crashSeed, inputs.horizonYears, inputs.crashYears);
-  const crashSet = new Set(crashYears);
-
-  // Shared per-year effective crash depths (identical for both platforms).
-  const crashDepths = new Map<number, number>();
-  for (const year of crashYears) {
-    crashDepths.set(
-      year,
-      effectiveCrashDepth(
-        year,
-        inputs.crashOverrides,
-        inputs.crashSeed,
-        inputs.crashSeverityMin,
-        inputs.crashSeverityMax,
-        CRASH_SEVERITY_OUTER_MIN,
-        CRASH_SEVERITY_OUTER_MAX,
-      ),
-    );
-  }
-
-  const investNow = simulateInvestNow(inputs, crashSet, crashDepths);
-  const ibkr = simulateIbkr(inputs, crashSet, crashDepths);
+  const marketYears = getHistoricalWindow(inputs.historicalEndYear, inputs.horizonYears);
+  const investNow = simulateInvestNow(inputs, marketYears);
+  const ibkr = simulateIbkr(inputs, marketYears);
 
   const instances = FREQUENCY_INSTANCES[inputs.frequency];
   const totalPrincipal =
     inputs.initialInvestment + inputs.periodicContribution * instances * inputs.horizonYears;
 
   return {
-    crashYears,
+    historicalStartYear: marketYears[0].year,
+    historicalEndYear: marketYears[marketYears.length - 1].year,
     totalPrincipal,
     investNow: {
       records: investNow.records,

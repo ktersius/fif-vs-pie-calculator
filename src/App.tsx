@@ -5,8 +5,8 @@ import ControlPanel from './components/ControlPanel';
 import SummaryDashboard from './components/SummaryDashboard';
 import TaxDragChart from './components/TaxDragChart';
 import { trackEvent } from './lib/analytics';
-import { CRASH_SEVERITY_OUTER_MAX, CRASH_SEVERITY_OUTER_MIN, MAX_CRASH_YEARS } from './lib/constants';
-import { DEFAULT_INPUTS, newSeed } from './lib/defaults';
+import { DEFAULT_INPUTS } from './lib/defaults';
+import { clampHistoricalEndYear } from './lib/historicalMarketData';
 import { runSimulation } from './lib/simulation';
 import type { SimulationInputs } from './lib/types';
 
@@ -25,42 +25,19 @@ export default function App() {
 
   const result = useMemo(() => runSimulation(inputs), [inputs]);
 
-  const crashYearsMax = Math.min(MAX_CRASH_YEARS, inputs.horizonYears);
-
   function handleChange<K extends keyof SimulationInputs>(key: K, value: SimulationInputs[K]) {
+    if (key === 'horizonYears' || key === 'historicalEndYear') {
+      setExpandedYear(null);
+    }
     setInputs((prev) => {
       const next = { ...prev, [key]: value };
-      // Clamp crash years so they never exceed the horizon.
-      if (key === 'horizonYears' || key === 'crashYears') {
-        const cap = Math.min(MAX_CRASH_YEARS, next.horizonYears);
-        next.crashYears = Math.min(next.crashYears, cap);
+      if (key === 'horizonYears' || key === 'historicalEndYear') {
+        next.historicalEndYear = clampHistoricalEndYear(
+          next.historicalEndYear,
+          next.horizonYears,
+        );
       }
       return next;
-    });
-  }
-
-  function handleReroll() {
-    trackEvent('rerollCrashYears');
-    setInputs((prev) => ({ ...prev, crashSeed: newSeed(), crashOverrides: {} }));
-  }
-
-  function handleSetCrashOverride(year: number, depth: number) {
-    trackEvent('adjustCrashDepth');
-    const clamped = Math.max(
-      CRASH_SEVERITY_OUTER_MIN,
-      Math.min(CRASH_SEVERITY_OUTER_MAX, depth),
-    );
-    setInputs((prev) => ({
-      ...prev,
-      crashOverrides: { ...prev.crashOverrides, [year]: clamped },
-    }));
-  }
-
-  function handleResetCrashOverride(year: number) {
-    setInputs((prev) => {
-      const next = { ...prev.crashOverrides };
-      delete next[year];
-      return { ...prev, crashOverrides: next };
     });
   }
 
@@ -89,12 +66,7 @@ export default function App() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[18rem_minmax(0,1fr)] xl:grid-cols-[19rem_minmax(0,1fr)] 2xl:grid-cols-[20rem_minmax(0,1fr)]">
         <aside className="lg:sticky lg:top-8 lg:self-start">
           <Section title="Control Panel">
-            <ControlPanel
-              inputs={inputs}
-              crashYearsMax={crashYearsMax}
-              onChange={handleChange}
-              onReroll={handleReroll}
-            />
+            <ControlPanel inputs={inputs} onChange={handleChange} />
           </Section>
         </aside>
 
@@ -104,12 +76,7 @@ export default function App() {
           </Section>
 
           <Section title="Portfolio Balance">
-            <BalanceChart
-              result={result}
-              overrides={inputs.crashOverrides}
-              onSetOverride={handleSetCrashOverride}
-              onResetOverride={handleResetCrashOverride}
-            />
+            <BalanceChart result={result} />
           </Section>
 
           <Section title="Tax Drag (per year)">
@@ -122,9 +89,6 @@ export default function App() {
               result={result}
               expandedYear={expandedYear}
               onToggle={handleToggleYear}
-              overrides={inputs.crashOverrides}
-              onSetOverride={handleSetCrashOverride}
-              onResetOverride={handleResetCrashOverride}
             />
           </Section>
         </main>

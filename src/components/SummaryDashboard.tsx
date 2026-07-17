@@ -64,6 +64,21 @@ export default function SummaryDashboard({ result }: { result: SimulationResult 
 
   return (
     <div className="space-y-4">
+      <p className="text-xs text-slate-500">
+        Historical period:{' '}
+        <span className="font-semibold text-slate-700">
+          {result.historicalStartYear}-{result.historicalEndYear}
+        </span>{' '}
+        · S&amp;P 500 price and dividend returns via{' '}
+        <a
+          href="https://www.slickcharts.com/sp500/returns/details"
+          target="_blank"
+          rel="noreferrer"
+          className="underline underline-offset-2 hover:text-slate-700"
+        >
+          SlickCharts
+        </a>
+      </p>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card
           title="Total Principal Contributed"

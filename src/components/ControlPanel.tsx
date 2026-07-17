@@ -1,19 +1,15 @@
-import {
-  CRASH_SEVERITY_OUTER_MAX,
-  CRASH_SEVERITY_OUTER_MIN,
-  MAX_CRASH_YEARS,
-  MAX_HORIZON,
-  MIN_HORIZON,
-} from '../lib/constants';
+import { MAX_HORIZON, MIN_HORIZON } from '../lib/constants';
 import { FREQUENCIES, MARGINAL_RATES, PIR_RATES } from '../lib/defaults';
+import {
+  EARLIEST_HISTORICAL_YEAR,
+  LATEST_HISTORICAL_YEAR,
+} from '../lib/historicalMarketData';
 import { formatNZD, formatPercent } from '../lib/format';
 import type { Frequency, SimulationInputs } from '../lib/types';
 
 interface Props {
   inputs: SimulationInputs;
-  crashYearsMax: number;
   onChange: <K extends keyof SimulationInputs>(key: K, value: SimulationInputs[K]) => void;
-  onReroll: () => void;
 }
 
 function Field({
@@ -60,52 +56,10 @@ function Slider({
   );
 }
 
-function DualRange({
-  min,
-  max,
-  step,
-  low,
-  high,
-  onChange,
-}: {
-  min: number;
-  max: number;
-  step: number;
-  low: number;
-  high: number;
-  onChange: (low: number, high: number) => void;
-}) {
-  const span = max - min;
-  const lowPct = ((low - min) / span) * 100;
-  const highPct = ((high - min) / span) * 100;
-  return (
-    <div className="dual-range">
-      <div className="dual-range-track" />
-      <div
-        className="dual-range-fill"
-        style={{ left: `${lowPct}%`, width: `${highPct - lowPct}%` }}
-      />
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={low}
-        onChange={(e) => onChange(Math.min(Number(e.target.value), high), high)}
-      />
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={high}
-        onChange={(e) => onChange(low, Math.max(Number(e.target.value), low))}
-      />
-    </div>
-  );
-}
+export default function ControlPanel({ inputs, onChange }: Props) {
+  const historicalStartYear = inputs.historicalEndYear - inputs.horizonYears + 1;
+  const minimumEndYear = EARLIEST_HISTORICAL_YEAR + inputs.horizonYears - 1;
 
-export default function ControlPanel({ inputs, crashYearsMax, onChange, onReroll }: Props) {
   return (
     <div className="grid grid-cols-1 gap-5">
       <Field label="Initial Investment" hint={formatNZD(inputs.initialInvestment)}>
@@ -152,24 +106,21 @@ export default function ControlPanel({ inputs, crashYearsMax, onChange, onReroll
         />
       </Field>
 
-      <Field label="Expected Annual Market Return" hint={formatPercent(inputs.marketReturn)}>
+      <Field
+        label="Historical Period"
+        hint={`${historicalStartYear} - ${inputs.historicalEndYear}`}
+      >
         <Slider
-          min={0.04}
-          max={0.15}
-          step={0.005}
-          value={inputs.marketReturn}
-          onChange={(v) => onChange('marketReturn', v)}
+          min={minimumEndYear}
+          max={LATEST_HISTORICAL_YEAR}
+          step={1}
+          value={inputs.historicalEndYear}
+          onChange={(v) => onChange('historicalEndYear', v)}
         />
-      </Field>
-
-      <Field label="Dividend Yield" hint={formatPercent(inputs.dividendYield)}>
-        <Slider
-          min={0}
-          max={0.05}
-          step={0.001}
-          value={inputs.dividendYield}
-          onChange={(v) => onChange('dividendYield', v)}
-        />
+        <div className="flex justify-between text-xs font-medium tabular-nums text-slate-500">
+          <span>{historicalStartYear}</span>
+          <span>{inputs.historicalEndYear}</span>
+        </div>
       </Field>
 
       <Field label="Marginal Income Tax Rate">
@@ -200,50 +151,6 @@ export default function ControlPanel({ inputs, crashYearsMax, onChange, onReroll
         </select>
       </Field>
 
-      <Field
-        label="Number of Crash Years"
-        hint={`${inputs.crashYears} of ${inputs.horizonYears} years (max ${Math.min(
-          MAX_CRASH_YEARS,
-          crashYearsMax,
-        )})`}
-      >
-        <Slider
-          min={0}
-          max={Math.min(MAX_CRASH_YEARS, crashYearsMax)}
-          step={1}
-          value={inputs.crashYears}
-          onChange={(v) => onChange('crashYears', v)}
-        />
-      </Field>
-
-      <Field
-        label="Crash Severity Band"
-        hint={`${formatPercent(inputs.crashSeverityMin)} \u2013 ${formatPercent(
-          inputs.crashSeverityMax,
-        )} drop`}
-      >
-        <DualRange
-          min={CRASH_SEVERITY_OUTER_MIN}
-          max={CRASH_SEVERITY_OUTER_MAX}
-          step={0.005}
-          low={inputs.crashSeverityMin}
-          high={inputs.crashSeverityMax}
-          onChange={(lo, hi) => {
-            onChange('crashSeverityMin', lo);
-            onChange('crashSeverityMax', hi);
-          }}
-        />
-      </Field>
-
-      <div className="flex items-end">
-        <button
-          type="button"
-          onClick={onReroll}
-          className="w-full rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
-        >
-          Re-roll crash years
-        </button>
-      </div>
     </div>
   );
 }

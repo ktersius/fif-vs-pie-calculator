@@ -3,14 +3,6 @@ const goatCounterScriptId = 'goatcounter-script';
 const analyticsEventDebounceMs = 1_000;
 
 export const analyticsEvents = {
-  rerollCrashYears: {
-    path: '/event/reroll-crash-years',
-    title: 'Re-roll crash years',
-  },
-  adjustCrashDepth: {
-    path: '/event/adjust-crash-depth',
-    title: 'Adjust crash depth',
-  },
   expandYearBreakdown: {
     path: '/event/expand-year-breakdown',
     title: 'Expand year breakdown',

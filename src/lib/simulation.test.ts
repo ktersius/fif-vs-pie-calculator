@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import {
+  HISTORICAL_MARKET_DATA,
+  LATEST_HISTORICAL_YEAR,
+} from './historicalMarketData';
 import { runSimulation } from './simulation';
 import type { SimulationInputs } from './types';
 
@@ -7,16 +11,13 @@ const base: SimulationInputs = {
   periodicContribution: 250,
   frequency: 'Weekly',
   horizonYears: 20,
-  marketReturn: 0.08,
-  dividendYield: 0.015,
+  historicalEndYear: LATEST_HISTORICAL_YEAR,
   marginalRate: 0.39,
   pir: 0.28,
-  crashYears: 3,
-  crashSeed: 42,
-  crashSeverityMin: 0.1,
-  crashSeverityMax: 0.35,
-  crashOverrides: {},
 };
+
+const marketYear = (year: number) =>
+  HISTORICAL_MARKET_DATA.find((record) => record.year === year)!;
 
 describe('runSimulation structure', () => {
   it('produces H + 1 records per platform for the default horizon', () => {
@@ -24,7 +25,9 @@ describe('runSimulation structure', () => {
     expect(result.investNow.records).toHaveLength(21);
     expect(result.ibkr.records).toHaveLength(21);
     expect(result.investNow.records[0].year).toBe(0);
+    expect(result.investNow.records[0].calendarYear).toBeNull();
     expect(result.investNow.records[20].year).toBe(20);
+    expect(result.investNow.records[20].calendarYear).toBe(LATEST_HISTORICAL_YEAR);
   });
 
   it('honours a custom horizon', () => {
@@ -36,38 +39,49 @@ describe('runSimulation structure', () => {
     const result = runSimulation(base);
     expect(result.totalPrincipal).toBe(100_000 + 250 * 52 * 20);
   });
+
+  it('maps a contiguous historical window to portfolio years', () => {
+    const result = runSimulation({ ...base, horizonYears: 3, historicalEndYear: 2025 });
+    expect(result.historicalStartYear).toBe(2023);
+    expect(result.historicalEndYear).toBe(2025);
+    expect(result.ibkr.records.slice(1).map((record) => record.calendarYear)).toEqual([
+      2023, 2024, 2025,
+    ]);
+  });
 });
 
-describe('crash severity', () => {
-  it('collapsed band (min=max=0.15) applies a fixed -15% depth to every crash year', () => {
-    const result = runSimulation({ ...base, crashSeverityMin: 0.15, crashSeverityMax: 0.15 });
-    for (const y of result.crashYears) {
-      const rec = result.ibkr.records[y];
-      expect(rec.isCrashYear).toBe(true);
-      expect(rec.crashDepth).toBeCloseTo(0.15, 10);
-    }
+describe('historical returns', () => {
+  it('applies the selected price and dividend returns to both platforms', () => {
+    const historical = marketYear(2008);
+    const result = runSimulation({ ...base, horizonYears: 1, historicalEndYear: 2008 });
+    const investNow = result.investNow.records[1];
+    const ibkr = result.ibkr.records[1];
+
+    expect(investNow.priceReturn).toBe(historical.priceReturn);
+    expect(investNow.dividendReturn).toBe(historical.dividendReturn);
+    expect(ibkr.priceReturn).toBe(historical.priceReturn);
+    expect(ibkr.dividendReturn).toBe(historical.dividendReturn);
   });
 
-  it('an override changes only its own crash year depth', () => {
-    const baseline = runSimulation(base);
-    const target = baseline.crashYears[0];
-    const overridden = runSimulation({ ...base, crashOverrides: { [target]: 0.5 } });
-    expect(overridden.ibkr.records[target].crashDepth).toBeCloseTo(0.5, 10);
-    for (const y of baseline.crashYears) {
-      if (y === target) continue;
-      expect(overridden.ibkr.records[y].crashDepth).toBeCloseTo(
-        baseline.ibkr.records[y].crashDepth,
-        10,
-      );
-    }
+  it('is deterministic for the same inputs and historical period', () => {
+    expect(runSimulation(base)).toEqual(runSimulation(base));
   });
 
-  it('re-roll (new seed) yields fresh crash depths', () => {
-    const a = runSimulation({ ...base, crashSeed: 42 });
-    const b = runSimulation({ ...base, crashSeed: 987_654 });
-    const depthsA = a.crashYears.map((y) => a.ibkr.records[y].crashDepth);
-    const depthsB = b.crashYears.map((y) => b.ibkr.records[y].crashDepth);
-    expect(depthsA).not.toEqual(depthsB);
+  it('applies the full annual return to the full net annual contribution', () => {
+    const historical = marketYear(2008);
+    const result = runSimulation({
+      ...base,
+      initialInvestment: 0,
+      periodicContribution: 1_000,
+      frequency: 'Annually',
+      horizonYears: 1,
+      historicalEndYear: 2008,
+    });
+    const record = result.investNow.records[1];
+
+    expect(record.netAnnualContribution).toBe(995);
+    expect(record.growth).toBeCloseTo(995 * historical.priceReturn, 10);
+    expect(record.grossDividends).toBeCloseTo(995 * historical.dividendReturn, 10);
   });
 });
 
@@ -78,32 +92,26 @@ describe('FIF de minimis behaviour', () => {
   });
 
   it('keeps a portfolio FIF-exempt when only unrealised growth lifts the balance', () => {
-    // No contributions, no dividends -> cost base stays at the initial net (< $100k).
     const result = runSimulation({
       ...base,
-      initialInvestment: 90_000,
+      initialInvestment: 80_000,
       periodicContribution: 0,
-      dividendYield: 0,
-      marketReturn: 0.15,
-      crashYears: 0,
+      horizonYears: 1,
+      historicalEndYear: 1958,
     });
-    // Balance grows well past $100k, but every year remains exempt.
-    const finalBalance = result.ibkr.summary.finalBalance;
-    expect(finalBalance).toBeGreaterThan(100_000);
-    for (let year = 1; year <= 20; year++) {
-      expect(result.ibkr.records[year].taxDetail?.regime).toBe('exempt');
-    }
+    expect(result.ibkr.summary.finalBalance).toBeGreaterThan(100_000);
+    expect(result.ibkr.records[1].taxDetail?.regime).toBe('exempt');
   });
 });
 
 describe('balance flooring', () => {
-  it('never produces a negative closing balance in an all-crash scenario', () => {
+  it('never produces a negative closing balance through a severe historical period', () => {
     const result = runSimulation({
       ...base,
       initialInvestment: 5_000,
       periodicContribution: 0,
-      horizonYears: 5,
-      crashYears: 5,
+      horizonYears: 10,
+      historicalEndYear: 2009,
       marginalRate: 0.39,
     });
     for (const rec of result.investNow.records) {
@@ -115,10 +123,17 @@ describe('balance flooring', () => {
   });
 });
 
-describe('crash-year stability across inputs', () => {
-  it('keeps the same crash years when a non-seed input changes', () => {
+describe('historical-period stability across inputs', () => {
+  it('keeps the same calendar years when a financial input changes', () => {
     const a = runSimulation(base);
-    const b = runSimulation({ ...base, marketReturn: 0.12, marginalRate: 0.33 });
-    expect(a.crashYears).toEqual(b.crashYears);
+    const b = runSimulation({ ...base, marginalRate: 0.33 });
+    expect(a.ibkr.records.map((record) => record.calendarYear)).toEqual(
+      b.ibkr.records.map((record) => record.calendarYear),
+    );
+  });
+
+  it('uses CV in a historical downturn when it produces lower tax', () => {
+    const result = runSimulation({ ...base, horizonYears: 1, historicalEndYear: 2008 });
+    expect(result.ibkr.records[1].taxDetail?.selectedMethod).toBe('CV');
   });
 });

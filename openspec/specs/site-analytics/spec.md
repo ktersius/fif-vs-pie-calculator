@@ -16,15 +16,7 @@ The system SHALL support GoatCounter pageview analytics for the deployed static 
 - **THEN** the application SHALL load and function without sending GoatCounter analytics
 
 ### Requirement: Anonymous calculator interaction events
-The system SHALL track only approved anonymous high-level calculator interactions as GoatCounter custom events.
-
-#### Scenario: Crash years are re-rolled
-- **WHEN** the investor activates the re-roll crash years control
-- **THEN** the system SHALL send an anonymous GoatCounter event for `/event/reroll-crash-years`
-
-#### Scenario: Crash depth is adjusted
-- **WHEN** the investor changes a crash depth override
-- **THEN** the system SHALL send an anonymous GoatCounter event for `/event/adjust-crash-depth`
+The system SHALL track only approved anonymous high-level calculator interactions as GoatCounter custom events. Changing the historical period SHALL NOT send an analytics event.
 
 #### Scenario: Year breakdown is expanded
 - **WHEN** the investor expands a year in the year-by-year breakdown
@@ -33,6 +25,10 @@ The system SHALL track only approved anonymous high-level calculator interaction
 #### Scenario: Tax chart year is selected
 - **WHEN** the investor selects a year from the tax drag chart
 - **THEN** the system SHALL send an anonymous GoatCounter event for `/event/click-tax-chart-year`
+
+#### Scenario: Historical period changes are not tracked
+- **WHEN** the investor changes the historical end year
+- **THEN** the system SHALL NOT send a GoatCounter custom event for that interaction
 
 ### Requirement: Financial values are excluded from analytics
 The system SHALL NOT send user-entered financial assumptions, tax rates, balances, calculated results, or per-year simulation values to GoatCounter.
