@@ -77,7 +77,7 @@ The model deliberately retains its existing simplification that all annual contr
 
 ### Simplify the control panel and results
 
-Remove expected market return, dividend yield, crash count, crash severity, re-roll, and manual override controls. Add one native range input for the historical end year, displayed with the derived start/end range and placed near the investment horizon.
+Remove expected market return, dividend yield, crash count, crash severity, re-roll, and manual override controls. Add one native range input for the historical end year, placed near the investment horizon. Show the derived start year to the left of the slider and the selected end year to the right so the complete locked range remains visible.
 
 Show a compact `Historical period: YYYY-YYYY` line above the summary. Use calendar years as primary labels and portfolio years as secondary context. Balance-chart tooltips and breakdown rows show the annual price return; the chart has no special crash markers or popovers.
 

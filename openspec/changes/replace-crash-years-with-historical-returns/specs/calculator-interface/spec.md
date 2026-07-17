@@ -2,7 +2,7 @@
 
 ### Requirement: Historical Period Control
 
-The system SHALL provide a single native range control for selecting the historical end year. The selected historical window length SHALL always equal the investment horizon, and the interface SHALL display the derived start and end years.
+The system SHALL provide a single native range control for selecting the historical end year. The selected historical window length SHALL always equal the investment horizon. The interface SHALL show the derived start year to the left of the slider and the selected end year to the right.
 
 The slider minimum SHALL equal `earliest dataset year + horizon - 1`; its maximum SHALL equal the latest completed dataset year. The default SHALL select the latest completed year.
 
@@ -15,6 +15,11 @@ The slider minimum SHALL equal `earliest dataset year + horizon - 1`; its maximu
 
 - **WHEN** the investor moves the historical end-year slider
 - **THEN** the start year changes to remain exactly one investment horizon before the selected end year and the simulation recomputes
+
+#### Scenario: Slider shows both range boundaries
+
+- **WHEN** the historical period control is displayed
+- **THEN** the derived start year is visible on the left and the selected end year is visible on the right
 
 #### Scenario: Horizon change preserves end year
 

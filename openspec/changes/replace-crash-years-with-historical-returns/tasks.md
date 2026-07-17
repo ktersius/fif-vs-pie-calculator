@@ -17,7 +17,7 @@
 
 - [ ] 3.1 Update `App` state handling so horizon changes preserve the selected historical end year when valid and otherwise clamp it to the nearest complete window.
 - [ ] 3.2 Remove expected-return, dividend-yield, crash-count, crash-severity, re-roll, and override controls from the control panel.
-- [ ] 3.3 Add the native historical end-year range slider with dynamic bounds and a visible derived start/end range, defaulting to the latest complete window.
+- [ ] 3.3 Add the native historical end-year range slider with dynamic bounds, the derived start year on the left, and the selected end year on the right, defaulting to the latest complete window.
 - [ ] 3.4 Add a compact historical-period and SlickCharts attribution line above the summary results.
 
 ## 4. Historical Results Presentation
