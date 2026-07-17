@@ -3,12 +3,28 @@ import type { FifTaxDetail, PieTaxDetail } from './types';
 
 /**
  * InvestNow PIE Fair Dividend Rate tax. Taxable Income = Opening Balance x 5%;
- * PIE Tax = Taxable Income x PIR. Levied even when the market return is negative.
+ * foreign withholding tax reduces the PIE tax owed.
  */
-export function pieTax(openingBalance: number, pir: number): PieTaxDetail {
+export function pieTax(
+  openingBalance: number,
+  grossDividends: number,
+  pir: number,
+): PieTaxDetail {
   const taxableIncome = openingBalance * FDR_RATE;
-  const taxOwed = taxableIncome * pir;
-  return { openingBalance, taxableIncome, pir, taxOwed };
+  const grossTax = taxableIncome * pir;
+  const withholdingTax = grossDividends * WITHHOLDING_TAX_RATE;
+  const foreignTaxCredit = Math.min(withholdingTax, grossTax);
+  const netTax = grossTax - foreignTaxCredit;
+  return {
+    openingBalance,
+    grossDividends,
+    withholdingTax,
+    taxableIncome,
+    pir,
+    grossTax,
+    foreignTaxCredit,
+    netTax,
+  };
 }
 
 export interface FifTaxParams {

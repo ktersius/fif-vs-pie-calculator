@@ -2,16 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { pieTax, fifTax } from './tax';
 
 describe('PIE FDR tax', () => {
-  it('taxes 5% of opening balance at the PIR in a positive year', () => {
-    const detail = pieTax(100_000, 0.28);
+  it('applies foreign withholding tax as a credit against gross PIE tax', () => {
+    const detail = pieTax(100_000, 3_000, 0.28);
     expect(detail.taxableIncome).toBe(5_000);
-    expect(detail.taxOwed).toBeCloseTo(1_400, 6);
+    expect(detail.grossTax).toBeCloseTo(1_400, 6);
+    expect(detail.withholdingTax).toBeCloseTo(450, 6);
+    expect(detail.foreignTaxCredit).toBeCloseTo(450, 6);
+    expect(detail.netTax).toBeCloseTo(950, 6);
   });
 
-  it('is levied even in a negative historical year (depends only on opening balance and PIR)', () => {
-    // Same opening balance yields the same PIE tax regardless of market return.
-    const detail = pieTax(200_000, 0.28);
-    expect(detail.taxOwed).toBeCloseTo(2_800, 6);
+  it('caps the foreign tax credit at gross PIE tax', () => {
+    const detail = pieTax(10_000, 5_000, 0.105);
+    expect(detail.grossTax).toBeCloseTo(52.5, 6);
+    expect(detail.withholdingTax).toBeCloseTo(750, 6);
+    expect(detail.foreignTaxCredit).toBeCloseTo(52.5, 6);
+    expect(detail.netTax).toBe(0);
   });
 });
 

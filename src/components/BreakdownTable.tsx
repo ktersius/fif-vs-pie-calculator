@@ -38,9 +38,13 @@ function PieTaxPanel({ detail }: { detail: PieTaxDetail }) {
   return (
     <Panel title="PIE tax (FDR)">
       <Row label="Opening balance" value={formatNZD(detail.openingBalance)} />
+      <Row label="Gross dividends" value={formatNZD(detail.grossDividends)} />
+      <Row label="US withholding tax" value={formatNZD(detail.withholdingTax)} />
       <Row label="Taxable income (x5%)" value={formatNZD(detail.taxableIncome)} />
       <Row label={`PIR (${(detail.pir * 100).toFixed(2)}%)`} value="" />
-      <Row label="PIE tax owed" value={formatNZD(detail.taxOwed)} strong />
+      <Row label="Gross PIE tax" value={formatNZD(detail.grossTax)} />
+      <Row label="Foreign tax credit" value={formatNZD(detail.foreignTaxCredit)} />
+      <Row label="Net PIE tax owed" value={formatNZD(detail.netTax)} strong />
     </Panel>
   );
 }

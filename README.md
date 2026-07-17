@@ -76,6 +76,10 @@ Annual S&P 500 price and dividend returns are stored in the repository and sourc
 
 The simulation retains its existing annual timing approximation: the full net annual contribution participates in the full calendar year's price and dividend returns, even when the selected contribution frequency is weekly, fortnightly, or monthly.
 
+## Tax model
+
+See [docs/tax-model.md](docs/tax-model.md) for the formulas, assumptions, primary sources, and a worked PIE withholding-credit example.
+
 ## Deployment
 
 The app is configured for GitHub Pages project-site hosting at:

@@ -83,6 +83,31 @@ describe('historical returns', () => {
     expect(record.growth).toBeCloseTo(995 * historical.priceReturn, 10);
     expect(record.grossDividends).toBeCloseTo(995 * historical.dividendReturn, 10);
   });
+
+  it('credits InvestNow withholding tax exactly once', () => {
+    const result = runSimulation({
+      ...base,
+      initialInvestment: 220_000,
+      periodicContribution: 1_000,
+      frequency: 'Weekly',
+      horizonYears: 1,
+      historicalEndYear: 1991,
+    });
+    const record = result.investNow.records[1];
+    const detail = record.taxDetail!;
+
+    expect(record.openingBalance).toBe(218_900);
+    expect(record.grossDividends).toBeCloseTo(11_267.55512, 6);
+    expect(record.netDividends).toBeCloseTo(
+      record.grossDividends - detail.withholdingTax,
+      6,
+    );
+    expect(detail.grossTax).toBeCloseTo(3_064.6, 6);
+    expect(detail.foreignTaxCredit).toBeCloseTo(1_690.133268, 6);
+    expect(record.tax).toBeCloseTo(1_374.466732, 6);
+    expect(record.tax + detail.withholdingTax).toBeCloseTo(detail.grossTax, 6);
+    expect(result.investNow.summary.totalTax).toBeCloseTo(record.tax, 6);
+  });
 });
 
 describe('FIF de minimis behaviour', () => {

@@ -8,22 +8,30 @@ Defines the New Zealand tax treatment applied to each portfolio: the InvestNow P
 
 ### Requirement: PIE Fund FDR Taxation
 
-The system SHALL tax the InvestNow PIE portfolio annually under the Fair Dividend Rate (FDR) structure using the investor's Prescribed Investor Rate (PIR).
+The system SHALL tax the InvestNow PIE portfolio annually under the Fair Dividend Rate (FDR) structure using the investor's Prescribed Investor Rate (PIR), while applying US dividend withholding tax as an attributed foreign tax credit.
 
 - Taxable Income = Opening Balance of the year × 0.05.
-- PIE Tax Owed = Taxable Income × PIR.
-- PIE tax is levied even when the market return for the year is negative.
-- US withholding tax is handled internally by the fund and is not separately modelled; the simulation deducts only the PIE Tax Owed.
+- Gross PIE Tax = Taxable Income × PIR.
+- US Withholding Tax = Gross Dividends × 0.15.
+- Foreign Tax Credit = min(US Withholding Tax, Gross PIE Tax).
+- Net PIE Tax Owed = Gross PIE Tax - Foreign Tax Credit.
+- Net PIE Tax Owed SHALL NOT be negative and unused foreign tax credits SHALL NOT be refunded.
+- PIE FDR tax is calculated even when the market return for the year is negative.
 
-#### Scenario: PIE tax in a positive year
+#### Scenario: PIE tax applies the withholding credit
 
-- **WHEN** the InvestNow portfolio has a positive-return year
-- **THEN** PIE Tax Owed equals (Opening Balance × 0.05) × PIR and is deducted from the pre-tax balance
+- **WHEN** the InvestNow portfolio receives a gross historical dividend and its US withholding tax is less than Gross PIE Tax
+- **THEN** Net PIE Tax Owed equals Gross PIE Tax minus the full US withholding tax credit
 
-#### Scenario: PIE tax levied in a crash year
+#### Scenario: PIE foreign tax credit is capped
 
-- **WHEN** the InvestNow portfolio experiences a crash year with a negative market return
-- **THEN** PIE Tax Owed is still calculated as (Opening Balance × 0.05) × PIR and deducted
+- **WHEN** US withholding tax exceeds Gross PIE Tax
+- **THEN** the applied Foreign Tax Credit equals Gross PIE Tax and Net PIE Tax Owed is zero
+
+#### Scenario: PIE tax is calculated in a negative year
+
+- **WHEN** the InvestNow portfolio experiences a historical year with a negative price return
+- **THEN** Gross PIE Tax is still calculated from Opening Balance and PIR before the available withholding credit is applied
 
 ### Requirement: FIF De Minimis Threshold
 

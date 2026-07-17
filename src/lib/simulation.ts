@@ -84,8 +84,8 @@ function simulateInvestNow(
     const managementFee = temp * MANAGEMENT_FEE_RATE;
     temp -= managementFee;
 
-    const taxDetail = pieTax(opening, pir);
-    const tax = taxDetail.taxOwed;
+    const taxDetail = pieTax(opening, grossDividends, pir);
+    const tax = taxDetail.netTax;
     let closing = Math.max(0, temp - tax);
 
     const yearFees = {

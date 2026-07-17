@@ -38,9 +38,13 @@ export interface FeeYearDetail {
 /** InvestNow PIE tax calculation detail. */
 export interface PieTaxDetail {
   openingBalance: number;
+  grossDividends: number;
+  withholdingTax: number;
   taxableIncome: number;
   pir: number;
-  taxOwed: number;
+  grossTax: number;
+  foreignTaxCredit: number;
+  netTax: number;
 }
 
 /** IBKR FIF tax calculation detail. */
