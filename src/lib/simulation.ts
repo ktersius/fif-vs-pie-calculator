@@ -299,33 +299,23 @@ function simulateIbkr(
   return { records, fees, totalTax };
 }
 
-/**
- * Run the full 20-year (configurable) comparison. Returns per-year records for
- * both platforms plus aggregate summaries. Deterministic for a given set of
- * inputs and historical period.
- */
-export function runSimulation(inputs: SimulationInputs): CalculatorResult {
-  const marketYears = getHistoricalWindow(inputs.historicalEndYear, inputs.horizonYears);
+export function runPieDirectMarketPath(
+  inputs: SimulationInputs,
+  marketYears: HistoricalMarketYear[],
+): Pick<CalculatorResult, 'totalPrincipal' | 'left' | 'right'> {
   const investNow = simulateInvestNow(inputs, marketYears);
   const ibkr = simulateIbkr(inputs, marketYears);
-
   const instances = FREQUENCY_INSTANCES[inputs.frequency];
   const totalPrincipal =
     inputs.initialInvestment + inputs.periodicContribution * instances * inputs.horizonYears;
 
   return {
-    mode: 'pie-vs-us',
-    title: 'NZ FIF vs PIE Calculator',
-    description:
-      'Comparison of an InvestNow Foundation Series PIE fund and a direct US ETF held through Interactive Brokers.',
-    historicalStartYear: marketYears[0].year,
-    historicalEndYear: marketYears[marketYears.length - 1].year,
     totalPrincipal,
     left: {
       key: 'invest-now',
       label: 'InvestNow Foundation Series PIE',
       shortLabel: 'InvestNow',
-      color: '#2563eb',
+      color: '#16a34a',
       records: investNow.records,
       summary: {
         finalBalance: investNow.records[investNow.records.length - 1].closingBalance,
@@ -337,7 +327,7 @@ export function runSimulation(inputs: SimulationInputs): CalculatorResult {
       key: 'direct-us-etf',
       label: 'Direct US ETF (IBKR)',
       shortLabel: 'US ETF',
-      color: '#16a34a',
+      color: '#2563eb',
       records: ibkr.records,
       summary: {
         finalBalance: ibkr.records[ibkr.records.length - 1].closingBalance,
@@ -345,6 +335,24 @@ export function runSimulation(inputs: SimulationInputs): CalculatorResult {
         fees: ibkr.fees,
       },
     },
+  };
+}
+
+/**
+ * Run the full 20-year (configurable) comparison. Returns per-year records for
+ * both platforms plus aggregate summaries. Deterministic for a given set of
+ * inputs and historical period.
+ */
+export function runSimulation(inputs: SimulationInputs): CalculatorResult {
+  const marketYears = getHistoricalWindow(inputs.historicalEndYear, inputs.horizonYears);
+  return {
+    mode: 'pie-vs-us',
+    title: 'NZ FIF vs PIE Calculator',
+    description:
+      'Comparison of an InvestNow Foundation Series PIE fund and a direct US ETF held through Interactive Brokers.',
+    historicalStartYear: marketYears[0].year,
+    historicalEndYear: marketYears[marketYears.length - 1].year,
+    ...runPieDirectMarketPath(inputs, marketYears),
   };
 }
 

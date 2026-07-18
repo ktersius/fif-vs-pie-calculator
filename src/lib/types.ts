@@ -1,4 +1,5 @@
 export type Frequency = 'Weekly' | 'Fortnightly' | 'Monthly' | 'Annually';
+export type AnalysisMethod = 'historical' | 'monte-carlo';
 export type CalculatorMode = 'pie-vs-us' | 'us-vs-irish';
 export type FxMode = 'auto' | 'manual';
 export type EtfDomicile = 'us' | 'irish';

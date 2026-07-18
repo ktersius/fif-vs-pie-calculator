@@ -5,9 +5,21 @@ import {
   LATEST_HISTORICAL_YEAR,
 } from '../lib/historicalMarketData';
 import { formatNZD, formatPercent } from '../lib/format';
-import type { CalculatorMode, Frequency, FxMode, SimulationInputs } from '../lib/types';
+import {
+  MONTE_CARLO_MEAN_BLOCK_LENGTH,
+  MONTE_CARLO_RUNS,
+  MONTE_CARLO_SEED,
+} from '../lib/monteCarlo';
+import type {
+  AnalysisMethod,
+  CalculatorMode,
+  Frequency,
+  FxMode,
+  SimulationInputs,
+} from '../lib/types';
 
 interface Props {
+  analysisMethod: AnalysisMethod;
   mode: CalculatorMode;
   inputs: SimulationInputs;
   onChange: <K extends keyof SimulationInputs>(key: K, value: SimulationInputs[K]) => void;
@@ -57,7 +69,7 @@ function Slider({
   );
 }
 
-export default function ControlPanel({ mode, inputs, onChange }: Props) {
+export default function ControlPanel({ analysisMethod, mode, inputs, onChange }: Props) {
   const historicalStartYear = inputs.historicalEndYear - inputs.horizonYears + 1;
   const minimumEndYear = EARLIEST_HISTORICAL_YEAR + inputs.horizonYears - 1;
 
@@ -107,22 +119,24 @@ export default function ControlPanel({ mode, inputs, onChange }: Props) {
         />
       </Field>
 
-      <Field
-        label="Historical Period"
-        hint={`${historicalStartYear} - ${inputs.historicalEndYear}`}
-      >
-        <Slider
-          min={minimumEndYear}
-          max={LATEST_HISTORICAL_YEAR}
-          step={1}
-          value={inputs.historicalEndYear}
-          onChange={(v) => onChange('historicalEndYear', v)}
-        />
-        <div className="flex justify-between text-xs font-medium tabular-nums text-slate-500">
-          <span>{historicalStartYear}</span>
-          <span>{inputs.historicalEndYear}</span>
-        </div>
-      </Field>
+      {analysisMethod === 'historical' ? (
+        <Field
+          label="Historical End Year"
+          hint={`${historicalStartYear} - ${inputs.historicalEndYear}`}
+        >
+          <Slider
+            min={minimumEndYear}
+            max={LATEST_HISTORICAL_YEAR}
+            step={1}
+            value={inputs.historicalEndYear}
+            onChange={(v) => onChange('historicalEndYear', v)}
+          />
+          <div className="flex justify-between text-xs font-medium tabular-nums text-slate-500">
+            <span>{historicalStartYear}</span>
+            <span>{inputs.historicalEndYear}</span>
+          </div>
+        </Field>
+      ) : null}
 
       <Field label="Marginal Income Tax Rate">
         <select
@@ -138,7 +152,7 @@ export default function ControlPanel({ mode, inputs, onChange }: Props) {
         </select>
       </Field>
 
-      {mode === 'pie-vs-us' ? (
+      {analysisMethod === 'monte-carlo' || mode === 'pie-vs-us' ? (
         <Field label="PIE PIR (Prescribed Investor Rate)">
           <select
             value={inputs.pir}
@@ -152,7 +166,7 @@ export default function ControlPanel({ mode, inputs, onChange }: Props) {
             ))}
           </select>
         </Field>
-      ) : (
+      ) : analysisMethod === 'historical' ? (
         <>
           <Field label="FX Conversion">
             <select
@@ -168,7 +182,24 @@ export default function ControlPanel({ mode, inputs, onChange }: Props) {
             Assumes the investor is subject to FIF for every simulated year.
           </p>
         </>
-      )}
+      ) : null}
+
+      {analysisMethod === 'monte-carlo' ? (
+        <div
+          className="rounded border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600"
+          aria-label="Fixed Monte Carlo assumptions"
+        >
+          <div className="font-semibold text-slate-700">Fixed Monte Carlo assumptions</div>
+          <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
+            <dt>Runs</dt>
+            <dd className="text-right tabular-nums">{MONTE_CARLO_RUNS.toLocaleString('en-NZ')}</dd>
+            <dt>Seed</dt>
+            <dd className="text-right tabular-nums">{MONTE_CARLO_SEED}</dd>
+            <dt>Mean block length</dt>
+            <dd className="text-right tabular-nums">{MONTE_CARLO_MEAN_BLOCK_LENGTH} years</dd>
+          </dl>
+        </div>
+      ) : null}
     </div>
   );
 }

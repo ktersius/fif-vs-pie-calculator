@@ -3,7 +3,7 @@ import {
   HISTORICAL_MARKET_DATA,
   LATEST_HISTORICAL_YEAR,
 } from './historicalMarketData';
-import { runSimulation, runUsIrishSimulation } from './simulation';
+import { runPieDirectMarketPath, runSimulation, runUsIrishSimulation } from './simulation';
 import type { SimulationInputs } from './types';
 
 const base: SimulationInputs = {
@@ -26,6 +26,8 @@ describe('runSimulation structure', () => {
     expect(result.mode).toBe('pie-vs-us');
     expect(result.left.shortLabel).toBe('InvestNow');
     expect(result.right.shortLabel).toBe('US ETF');
+    expect(result.left.color).toBe('#16a34a');
+    expect(result.right.color).toBe('#2563eb');
     expect(result.left.records).toHaveLength(21);
     expect(result.right.records).toHaveLength(21);
     expect(result.left.records[0].year).toBe(0);
@@ -51,6 +53,87 @@ describe('runSimulation structure', () => {
     expect(result.right.records.slice(1).map((record) => record.calendarYear)).toEqual([
       2023, 2024, 2025,
     ]);
+  });
+});
+
+describe('historical extraction regression', () => {
+  it('keeps every default historical closing balance and aggregate unchanged', () => {
+    const result = runSimulation(base);
+    expect(result.left.records.map((record) => record.closingBalance)).toEqual([
+      99500,
+      128756.53977718495,
+      147623.0976299211,
+      99054.64001032899,
+      140192.9986455973,
+      174173.6734612895,
+      188561.0959720452,
+      231025.73057616036,
+      319648.6632483297,
+      373526.19528581924,
+      386447.8210924472,
+      441605.0281243646,
+      547418.0089839536,
+      527985.4205351635,
+      703651.7239694266,
+      838333.7158676008,
+      1083603.2879365715,
+      882516.0290587526,
+      1118171.450541724,
+      1398031.5222697505,
+      1634960.984046836,
+    ]);
+    expect(result.right.records.map((record) => record.closingBalance)).toEqual([
+      99969.41666666667,
+      128779.12517373121,
+      146970.76050013592,
+      100373.4405085159,
+      141328.6339791467,
+      174722.12779785192,
+      190068.66262297257,
+      231743.1801029397,
+      319354.29865281394,
+      371474.2728948503,
+      387605.15472938097,
+      440786.7964397315,
+      544046.055172315,
+      530903.5780882947,
+      704567.2807447051,
+      835565.8897616054,
+      1075524.6105264418,
+      888921.9033233756,
+      1121319.0989810347,
+      1395792.6650635486,
+      1632438.7728864104,
+    ]);
+    expect(result.left.summary).toEqual({
+      finalBalance: 1634960.984046836,
+      totalTax: 108265.15263533153,
+      fees: {
+        transaction: 10015.8843419439,
+        fx: 0,
+        brokerage: 0,
+        management: 3445.564268483708,
+        total: 13461.448610427607,
+      },
+    });
+    expect(result.right.summary).toEqual({
+      finalBalance: 1632438.7728864104,
+      totalTax: 124840.28486387183,
+      fees: {
+        transaction: 0,
+        fx: 597.8787704970723,
+        brokerage: 607.8333333333328,
+        management: 3447.3193122689313,
+        total: 4653.031416099337,
+      },
+    });
+  });
+
+  it('runs both structures through the explicit market path', () => {
+    const path = [marketYear(2008), marketYear(2009)];
+    const result = runPieDirectMarketPath({ ...base, horizonYears: 2 }, path);
+    expect(result.left.records.slice(1).map((record) => record.calendarYear)).toEqual([2008, 2009]);
+    expect(result.right.records.slice(1).map((record) => record.calendarYear)).toEqual([2008, 2009]);
   });
 });
 

@@ -5,7 +5,7 @@ A web-based calculator for comparing two New Zealand investment approaches:
 - an InvestNow Foundation Series PIE fund
 - a direct US ETF portfolio held through Interactive Brokers
 
-The app replays historical S&P 500 price and dividend returns while modelling platform fees, dividend withholding tax, and New Zealand tax treatment over a configurable investment horizon. It is intended as an illustrative comparison tool, not financial or tax advice.
+The app offers a Historical Backtest and a historically conditioned Monte Carlo Simulation while modelling platform fees, dividend withholding tax, and New Zealand tax treatment over a configurable investment horizon. It is intended as an illustrative comparison tool, not financial or tax advice.
 
 ## What it compares
 
@@ -19,12 +19,21 @@ For the Interactive Brokers scenario, the model tracks the FIF de minimis thresh
 
 - Configurable initial investment, periodic contributions, contribution frequency, investment horizon, historical period, marginal tax rate, and PIR.
 - Contiguous historical S&P 500 price and dividend returns from 1957 onward.
+- A 5,000-run seeded stationary-block-bootstrap simulation for PIE versus direct US holdings.
 - A horizon-locked historical period slider that defaults to the latest completed years.
 - Summary dashboard for final balances, total NZ tax paid, and itemised fees.
 - Portfolio balance chart comparing both platforms over time.
 - Tax drag chart showing annual tax paid by platform.
 - Expandable year-by-year breakdown with tax and fee detail.
 - Responsive layout with a sidebar control panel on wider screens.
+
+## Analysis methods
+
+**Historical Backtest** replays one contiguous, actual S&P 500 period and shows what would have happened under the selected investment structures and calculator assumptions. It remains the default and supports both PIE-versus-US and US-versus-Irish comparisons.
+
+**Monte Carlo Simulation** compares InvestNow PIE with a direct US ETF held through IBKR across 5,000 shared market paths. It resamples paired annual price and dividend observations from the full 1957-2025 dataset using seed `42` and stationary blocks averaging four years, then reports win rates, 10th/50th/90th percentile balances, tax, fees, value differences, and a histogram.
+
+Monte Carlo results are conditioned on the limited historical dataset and the calculator's current tax and fee assumptions. They are not forecasts and do not estimate future market returns, tax-law changes, or legal outcomes.
 
 ## Running locally
 
