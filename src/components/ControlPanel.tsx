@@ -5,9 +5,10 @@ import {
   LATEST_HISTORICAL_YEAR,
 } from '../lib/historicalMarketData';
 import { formatNZD, formatPercent } from '../lib/format';
-import type { Frequency, SimulationInputs } from '../lib/types';
+import type { CalculatorMode, Frequency, FxMode, SimulationInputs } from '../lib/types';
 
 interface Props {
+  mode: CalculatorMode;
   inputs: SimulationInputs;
   onChange: <K extends keyof SimulationInputs>(key: K, value: SimulationInputs[K]) => void;
 }
@@ -56,7 +57,7 @@ function Slider({
   );
 }
 
-export default function ControlPanel({ inputs, onChange }: Props) {
+export default function ControlPanel({ mode, inputs, onChange }: Props) {
   const historicalStartYear = inputs.historicalEndYear - inputs.horizonYears + 1;
   const minimumEndYear = EARLIEST_HISTORICAL_YEAR + inputs.horizonYears - 1;
 
@@ -137,20 +138,37 @@ export default function ControlPanel({ inputs, onChange }: Props) {
         </select>
       </Field>
 
-      <Field label="PIE PIR (Prescribed Investor Rate)">
-        <select
-          value={inputs.pir}
-          onChange={(e) => onChange('pir', Number(e.target.value))}
-          className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm"
-        >
-          {PIR_RATES.map((r) => (
-            <option key={r} value={r}>
-              {formatPercent(r)}
-            </option>
-          ))}
-        </select>
-      </Field>
-
+      {mode === 'pie-vs-us' ? (
+        <Field label="PIE PIR (Prescribed Investor Rate)">
+          <select
+            value={inputs.pir}
+            onChange={(e) => onChange('pir', Number(e.target.value))}
+            className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm"
+          >
+            {PIR_RATES.map((r) => (
+              <option key={r} value={r}>
+                {formatPercent(r)}
+              </option>
+            ))}
+          </select>
+        </Field>
+      ) : (
+        <>
+          <Field label="FX Conversion">
+            <select
+              value={inputs.fxMode}
+              onChange={(e) => onChange('fxMode', e.target.value as FxMode)}
+              className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm"
+            >
+              <option value="auto">Auto Conversion (0.03%)</option>
+              <option value="manual">Manual Spot (USD $2 minimum)</option>
+            </select>
+          </Field>
+          <p className="rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
+            Assumes the investor is subject to FIF for every simulated year.
+          </p>
+        </>
+      )}
     </div>
   );
 }

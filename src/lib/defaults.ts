@@ -9,6 +9,7 @@ export const DEFAULT_INPUTS: SimulationInputs = {
   historicalEndYear: LATEST_HISTORICAL_YEAR,
   marginalRate: 0.39,
   pir: 0.28,
+  fxMode: 'auto',
 };
 
 export const FREQUENCIES: Frequency[] = ['Weekly', 'Fortnightly', 'Monthly', 'Annually'];

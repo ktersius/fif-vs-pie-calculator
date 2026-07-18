@@ -1,9 +1,11 @@
 import {
   FREQUENCY_INSTANCES,
+  IRISH_ETF_MANAGEMENT_FEE_RATE,
   MANAGEMENT_FEE_RATE,
   WITHHOLDING_TAX_RATE,
 } from './constants';
 import {
+  ibkrEtfOrderFee,
   ibkrBrokerageFee,
   ibkrFxFee,
   ibkrOrderFee,
@@ -11,14 +13,16 @@ import {
   investNowSellFee,
 } from './fees';
 import { getHistoricalWindow, type HistoricalMarketYear } from './historicalMarketData';
-import { fifTax, pieTax } from './tax';
+import { etfFifTax, fifTax, inheritedWealth, pieTax } from './tax';
 import type {
+  CalculatorResult,
+  EtfDomicile,
+  EtfYearRecord,
   FeeSummary,
   IbkrYearRecord,
   InvestNowYearRecord,
   OrderFee,
   SimulationInputs,
-  SimulationResult,
 } from './types';
 
 function emptyFeeSummary(): FeeSummary {
@@ -300,7 +304,7 @@ function simulateIbkr(
  * both platforms plus aggregate summaries. Deterministic for a given set of
  * inputs and historical period.
  */
-export function runSimulation(inputs: SimulationInputs): SimulationResult {
+export function runSimulation(inputs: SimulationInputs): CalculatorResult {
   const marketYears = getHistoricalWindow(inputs.historicalEndYear, inputs.horizonYears);
   const investNow = simulateInvestNow(inputs, marketYears);
   const ibkr = simulateIbkr(inputs, marketYears);
@@ -310,10 +314,18 @@ export function runSimulation(inputs: SimulationInputs): SimulationResult {
     inputs.initialInvestment + inputs.periodicContribution * instances * inputs.horizonYears;
 
   return {
+    mode: 'pie-vs-us',
+    title: 'NZ FIF vs PIE Calculator',
+    description:
+      'Comparison of an InvestNow Foundation Series PIE fund and a direct US ETF held through Interactive Brokers.',
     historicalStartYear: marketYears[0].year,
     historicalEndYear: marketYears[marketYears.length - 1].year,
     totalPrincipal,
-    investNow: {
+    left: {
+      key: 'invest-now',
+      label: 'InvestNow Foundation Series PIE',
+      shortLabel: 'InvestNow',
+      color: '#2563eb',
       records: investNow.records,
       summary: {
         finalBalance: investNow.records[investNow.records.length - 1].closingBalance,
@@ -321,12 +333,201 @@ export function runSimulation(inputs: SimulationInputs): SimulationResult {
         fees: investNow.fees,
       },
     },
-    ibkr: {
+    right: {
+      key: 'direct-us-etf',
+      label: 'Direct US ETF (IBKR)',
+      shortLabel: 'US ETF',
+      color: '#16a34a',
       records: ibkr.records,
       summary: {
         finalBalance: ibkr.records[ibkr.records.length - 1].closingBalance,
         totalTax: ibkr.totalTax,
         fees: ibkr.fees,
+      },
+    },
+  };
+}
+
+function simulateDomiciledEtf(
+  inputs: SimulationInputs,
+  marketYears: HistoricalMarketYear[],
+  domicile: EtfDomicile,
+): { records: EtfYearRecord[]; fees: FeeSummary; totalTax: number; terminalHolding: number } {
+  const { initialInvestment, periodicContribution, frequency, horizonYears, marginalRate, fxMode } =
+    inputs;
+  const instances = FREQUENCY_INSTANCES[frequency];
+  const venue = domicile === 'us' ? 'us' : 'lse';
+  const managementRate =
+    domicile === 'us' ? MANAGEMENT_FEE_RATE : IRISH_ETF_MANAGEMENT_FEE_RATE;
+  const brokerageLabel = domicile === 'us' ? 'US tiered brokerage' : 'LSE ETF brokerage';
+  const fees = emptyFeeSummary();
+  let totalTax = 0;
+
+  const initialOrder = ibkrEtfOrderFee(initialInvestment, fxMode, venue);
+  fees.fx += initialOrder.fxFee;
+  fees.brokerage += initialOrder.brokerageFee;
+  let balance = initialOrder.net;
+  let terminalHolding = balance;
+
+  const records: EtfYearRecord[] = [
+    {
+      year: 0,
+      calendarYear: null,
+      priceReturn: 0,
+      dividendReturn: 0,
+      openingBalance: initialInvestment,
+      netAnnualContribution: balance,
+      growth: 0,
+      grossDividends: 0,
+      externalDividends: 0,
+      withholdingTax: 0,
+      netDividends: 0,
+      managementFee: 0,
+      tax: 0,
+      closingBalance: balance,
+      taxDetail: null,
+      fees: {
+        orderCount: 0,
+        oneOffOrder: initialOrder,
+        oneOffLabel: 'Initial investment (FX + brokerage)',
+        fxFees: initialOrder.fxFee,
+        brokerageFees: initialOrder.brokerageFee,
+        transactionFees: 0,
+        managementFee: 0,
+        fxMode,
+        brokerageLabel,
+      },
+    },
+  ];
+
+  for (let year = 1; year <= horizonYears; year++) {
+    const opening = balance;
+    const marketYear = marketYears[year - 1];
+    const perOrder =
+      periodicContribution > 0
+        ? ibkrEtfOrderFee(periodicContribution, fxMode, venue)
+        : undefined;
+    const netContribution = (perOrder?.net ?? 0) * instances;
+    const fxFees = (perOrder?.fxFee ?? 0) * instances;
+    const brokerageFees = (perOrder?.brokerageFee ?? 0) * instances;
+
+    const base = opening + netContribution;
+    const growth = base * marketYear.priceReturn;
+    const grossDividends = base * marketYear.dividendReturn;
+    const withholdingTax = grossDividends * WITHHOLDING_TAX_RATE;
+    const netDividends = grossDividends - withholdingTax;
+    const externalDividends = domicile === 'us' ? grossDividends : 0;
+
+    let temp = base + growth + netDividends;
+    const managementFee = temp * managementRate;
+    temp -= managementFee;
+
+    const taxDetail = etfFifTax({
+      domicile,
+      openingBalance: opening,
+      grossDividends,
+      growth,
+      managementFee,
+      marginalRate,
+    });
+    const tax = taxDetail.netTax;
+    let closing = Math.max(0, temp - tax);
+    terminalHolding = closing;
+
+    let oneOffOrder: OrderFee | undefined;
+    let oneOffLabel: string | undefined;
+    let exitFx = 0;
+    let exitBrokerage = 0;
+    if (year === horizonYears) {
+      oneOffOrder = ibkrEtfOrderFee(closing, fxMode, venue);
+      oneOffLabel = 'Exit (FX + brokerage)';
+      exitFx = oneOffOrder.fxFee;
+      exitBrokerage = oneOffOrder.brokerageFee;
+      closing = oneOffOrder.net;
+    }
+
+    fees.fx += fxFees + exitFx;
+    fees.brokerage += brokerageFees + exitBrokerage;
+    fees.management += managementFee;
+    totalTax += tax;
+    balance = closing;
+
+    records.push({
+      year,
+      calendarYear: marketYear.year,
+      priceReturn: marketYear.priceReturn,
+      dividendReturn: marketYear.dividendReturn,
+      openingBalance: opening,
+      netAnnualContribution: netContribution,
+      growth,
+      grossDividends,
+      externalDividends,
+      withholdingTax,
+      netDividends,
+      managementFee,
+      tax,
+      closingBalance: closing,
+      taxDetail,
+      fees: {
+        representativeOrder: perOrder,
+        orderCount: periodicContribution > 0 ? instances : 0,
+        oneOffOrder,
+        oneOffLabel,
+        fxFees: fxFees + exitFx,
+        brokerageFees: brokerageFees + exitBrokerage,
+        transactionFees: 0,
+        managementFee,
+        fxMode,
+        brokerageLabel,
+      },
+    });
+  }
+
+  fees.total = fees.fx + fees.brokerage + fees.management;
+  return { records, fees, totalTax, terminalHolding };
+}
+
+/** Run the US-domiciled distributing versus Irish-domiciled accumulating comparison. */
+export function runUsIrishSimulation(inputs: SimulationInputs): CalculatorResult {
+  const marketYears = getHistoricalWindow(inputs.historicalEndYear, inputs.horizonYears);
+  const us = simulateDomiciledEtf(inputs, marketYears, 'us');
+  const irish = simulateDomiciledEtf(inputs, marketYears, 'irish');
+  const instances = FREQUENCY_INSTANCES[inputs.frequency];
+  const totalPrincipal =
+    inputs.initialInvestment + inputs.periodicContribution * instances * inputs.horizonYears;
+
+  return {
+    mode: 'us-vs-irish',
+    title: 'US vs Irish ETF Calculator',
+    description:
+      'Comparison of a US-domiciled distributing ETF and an Irish-domiciled accumulating ETF. Assumes FIF applies throughout.',
+    historicalStartYear: marketYears[0].year,
+    historicalEndYear: marketYears[marketYears.length - 1].year,
+    totalPrincipal,
+    left: {
+      key: 'us-etf',
+      label: 'US-domiciled distributing ETF',
+      shortLabel: 'US ETF',
+      color: '#2563eb',
+      records: us.records,
+      summary: {
+        finalBalance: us.records[us.records.length - 1].closingBalance,
+        totalTax: us.totalTax,
+        fees: us.fees,
+        inheritedWealth: inheritedWealth(us.terminalHolding, 'us'),
+      },
+    },
+    right: {
+      key: 'irish-etf',
+      label: 'Irish-domiciled accumulating ETF',
+      shortLabel: 'Irish ETF',
+      color: '#16a34a',
+      records: irish.records,
+      summary: {
+        finalBalance: irish.records[irish.records.length - 1].closingBalance,
+        totalTax: irish.totalTax,
+        fees: irish.fees,
+        inheritedWealth: inheritedWealth(irish.terminalHolding, 'irish'),
       },
     },
   };

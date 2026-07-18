@@ -1,17 +1,19 @@
 import { Fragment } from 'react';
 import { formatNZD, formatPercent } from '../lib/format';
 import type {
+  CalculatorResult,
+  EtfFifTaxDetail,
   FeeYearDetail,
   FifTaxDetail,
-  IbkrYearRecord,
-  InvestNowYearRecord,
   OrderFee,
   PieTaxDetail,
-  SimulationResult,
+  PlatformResult,
+  TaxDetail,
+  YearRecord,
 } from '../lib/types';
 
 interface Props {
-  result: SimulationResult;
+  result: CalculatorResult;
   expandedYear: number | null;
   onToggle: (year: number) => void;
 }
@@ -89,6 +91,66 @@ function FifTaxPanel({ detail }: { detail: FifTaxDetail }) {
   );
 }
 
+function EtfFifTaxPanel({ detail }: { detail: EtfFifTaxDetail }) {
+  const irish = detail.kind === 'irish-fif';
+  return (
+    <Panel title={`${irish ? 'Irish accumulating' : 'US distributing'} ETF FIF tax`}>
+      <Row label="Opening balance" value={formatNZD(detail.openingBalance)} />
+      <Row
+        label={irish ? 'Gross internal dividends' : 'Gross external dividends'}
+        value={formatNZD(detail.grossDividends)}
+      />
+      <Row
+        label={irish ? 'Internal withholding tax' : 'Investor withholding tax'}
+        value={formatNZD(detail.withholdingTax)}
+      />
+      <Row
+        label={irish ? 'Net accumulated dividends' : 'Net reinvested dividends'}
+        value={formatNZD(detail.netDividends)}
+      />
+      {irish ? <Row label="External dividends" value={formatNZD(0)} /> : null}
+      <Row label="Foreign tax credit" value={formatNZD(detail.foreignTaxCredit)} />
+      <div className="mt-2 grid grid-cols-2 gap-3">
+        <div
+          className={`rounded p-2 ${
+            detail.selectedMethod === 'FDR' ? 'bg-blue-100 ring-1 ring-blue-300' : 'bg-white'
+          }`}
+        >
+          <div className="text-xs font-semibold text-slate-500">
+            FDR {detail.selectedMethod === 'FDR' ? '(applied)' : ''}
+          </div>
+          <Row label="Income" value={formatNZD(detail.fdrIncome)} />
+          <Row label="Gross tax" value={formatNZD(detail.fdrGrossTax)} />
+          <Row label="Credit" value={formatNZD(detail.fdrForeignTaxCredit)} />
+          <Row label="Net tax" value={formatNZD(detail.fdrNetTax)} strong />
+        </div>
+        <div
+          className={`rounded p-2 ${
+            detail.selectedMethod === 'CV' ? 'bg-green-100 ring-1 ring-green-300' : 'bg-white'
+          }`}
+        >
+          <div className="text-xs font-semibold text-slate-500">
+            CV {detail.selectedMethod === 'CV' ? '(applied)' : ''}
+          </div>
+          <Row label="Income" value={formatNZD(detail.cvIncome)} />
+          <Row label="Gross tax" value={formatNZD(detail.cvGrossTax)} />
+          <Row label="Credit" value={formatNZD(detail.cvForeignTaxCredit)} />
+          <Row label="Net tax" value={formatNZD(detail.cvNetTax)} strong />
+        </div>
+      </div>
+      <div className="mt-2">
+        <Row label="Net tax owed (lesser)" value={formatNZD(detail.netTax)} strong />
+      </div>
+    </Panel>
+  );
+}
+
+function TaxPanel({ detail }: { detail: TaxDetail }) {
+  if (detail.kind === 'pie') return <PieTaxPanel detail={detail} />;
+  if (detail.kind === 'direct-fif') return <FifTaxPanel detail={detail} />;
+  return <EtfFifTaxPanel detail={detail} />;
+}
+
 function OrderRow({ label, order }: { label: string; order: OrderFee }) {
   return (
     <div className="mb-2">
@@ -104,6 +166,13 @@ function OrderRow({ label, order }: { label: string; order: OrderFee }) {
 function FeePanel({ fees }: { fees: FeeYearDetail }) {
   return (
     <Panel title="Fees">
+      {fees.fxMode ? (
+        <Row
+          label="FX method"
+          value={fees.fxMode === 'auto' ? 'Auto conversion' : 'Manual spot'}
+        />
+      ) : null}
+      {fees.brokerageLabel ? <Row label="Brokerage route" value={fees.brokerageLabel} /> : null}
       {fees.representativeOrder ? (
         <OrderRow
           label={`Representative order (x${fees.orderCount} identical)`}
@@ -127,22 +196,33 @@ function FeePanel({ fees }: { fees: FeeYearDetail }) {
   );
 }
 
-function ExpandedYear({ inv, ibkr }: {
-  inv: InvestNowYearRecord;
-  ibkr: IbkrYearRecord;
+function ExpandedYear({
+  left,
+  right,
+  leftPlatform,
+  rightPlatform,
+}: {
+  left: YearRecord;
+  right: YearRecord;
+  leftPlatform: PlatformResult;
+  rightPlatform: PlatformResult;
 }) {
   return (
     <div className="border-t border-slate-200 bg-white p-4">
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="space-y-3">
-          <div className="text-sm font-semibold text-blue-700">InvestNow (PIE)</div>
-          {inv.taxDetail ? <PieTaxPanel detail={inv.taxDetail} /> : null}
-          <FeePanel fees={inv.fees} />
+          <div className="text-sm font-semibold" style={{ color: leftPlatform.color }}>
+            {leftPlatform.label}
+          </div>
+          {left.taxDetail ? <TaxPanel detail={left.taxDetail} /> : null}
+          <FeePanel fees={left.fees} />
         </div>
         <div className="space-y-3">
-          <div className="text-sm font-semibold text-green-700">IBKR (FIF)</div>
-          {ibkr.taxDetail ? <FifTaxPanel detail={ibkr.taxDetail} /> : null}
-          <FeePanel fees={ibkr.fees} />
+          <div className="text-sm font-semibold" style={{ color: rightPlatform.color }}>
+            {rightPlatform.label}
+          </div>
+          {right.taxDetail ? <TaxPanel detail={right.taxDetail} /> : null}
+          <FeePanel fees={right.fees} />
         </div>
       </div>
     </div>
@@ -161,62 +241,82 @@ export default function BreakdownTable({
           <tr>
             <th className="w-20 px-2 py-2 sm:w-auto sm:px-3">Year</th>
             <th className="w-16 px-1 py-2 text-right sm:w-auto sm:px-3">Price / Dividend</th>
-            <th className="hidden px-3 py-2 text-right sm:table-cell">InvestNow balance</th>
-            <th className="hidden px-3 py-2 text-right sm:table-cell">IBKR balance</th>
-            <th className="px-2 py-2 text-right sm:px-3" aria-label="InvestNow tax">
-              <span className="sm:hidden">InvestNow</span>
-              <span className="hidden sm:inline">InvestNow tax</span>
+            <th className="hidden px-3 py-2 text-right sm:table-cell">
+              {result.left.shortLabel} balance
             </th>
-            <th className="px-2 py-2 text-right sm:px-3" aria-label="IBKR tax">
-              <span className="sm:hidden">IBKR</span>
-              <span className="hidden sm:inline">IBKR tax</span>
+            <th className="hidden px-3 py-2 text-right sm:table-cell">
+              {result.right.shortLabel} balance
+            </th>
+            <th
+              className="px-2 py-2 text-right sm:px-3"
+              aria-label={`${result.left.shortLabel} tax`}
+            >
+              <span className="sm:hidden">{result.left.shortLabel}</span>
+              <span className="hidden sm:inline">{result.left.shortLabel} tax</span>
+            </th>
+            <th
+              className="px-2 py-2 text-right sm:px-3"
+              aria-label={`${result.right.shortLabel} tax`}
+            >
+              <span className="sm:hidden">{result.right.shortLabel}</span>
+              <span className="hidden sm:inline">{result.right.shortLabel} tax</span>
             </th>
             <th className="w-8 px-1 py-2 sm:w-auto sm:px-3" />
           </tr>
         </thead>
         <tbody>
-          {result.investNow.records.map((inv, i) => {
-            const ibkr = result.ibkr.records[i];
-            const expanded = expandedYear === inv.year;
+          {result.left.records.map((left, i) => {
+            const right = result.right.records[i];
+            const expanded = expandedYear === left.year;
             return (
-              <Fragment key={inv.year}>
+              <Fragment key={left.year}>
                 <tr
-                  key={`row-${inv.year}`}
+                  key={`row-${left.year}`}
                   className={`cursor-pointer border-t border-slate-100 hover:bg-slate-50 ${
                     expanded ? 'bg-slate-50' : ''
                   }`}
-                  onClick={() => onToggle(inv.year)}
+                  onClick={() => onToggle(left.year)}
                 >
                   <td className="w-20 px-2 py-2 font-medium text-slate-700 sm:w-auto sm:px-3">
-                    <span className="block">{inv.calendarYear ?? 'Initial'}</span>
+                    <span className="block">{left.calendarYear ?? 'Initial'}</span>
                     <span className="block text-[0.65rem] font-normal text-slate-400 sm:inline sm:text-xs">
-                      Year {inv.year}
+                      Year {left.year}
                     </span>
                   </td>
                   <td className="w-16 px-1 py-2 text-right tabular-nums sm:w-auto sm:px-3">
-                    {inv.calendarYear ? (
+                    {left.calendarYear ? (
                       <>
-                        <span className="block">{formatPercent(inv.priceReturn)}</span>
-                        <span className="block">{formatPercent(inv.dividendReturn)}</span>
+                        <span className="block">{formatPercent(left.priceReturn)}</span>
+                        <span className="block">{formatPercent(left.dividendReturn)}</span>
                       </>
                     ) : '—'}
                   </td>
-                  <td className="hidden px-3 py-2 text-right tabular-nums sm:table-cell">{formatNZD(inv.closingBalance)}</td>
-                  <td className="hidden px-3 py-2 text-right tabular-nums sm:table-cell">{formatNZD(ibkr.closingBalance)}</td>
-                  <td className="px-2 py-2 text-right tabular-nums sm:px-3">{formatNZD(inv.tax)}</td>
-                  <td className="px-2 py-2 text-right tabular-nums sm:px-3">{formatNZD(ibkr.tax)}</td>
+                  <td className="hidden px-3 py-2 text-right tabular-nums sm:table-cell">{formatNZD(left.closingBalance)}</td>
+                  <td className="hidden px-3 py-2 text-right tabular-nums sm:table-cell">{formatNZD(right.closingBalance)}</td>
+                  <td className="px-2 py-2 text-right tabular-nums sm:px-3">{formatNZD(left.tax)}</td>
+                  <td className="px-2 py-2 text-right tabular-nums sm:px-3">{formatNZD(right.tax)}</td>
                   <td className="w-8 px-1 py-2 text-right text-slate-400 sm:w-auto sm:px-3">{expanded ? '▲' : '▼'}</td>
                 </tr>
                 {expanded ? (
                   <>
-                    <tr key={`detail-mobile-${inv.year}`} className="sm:hidden">
+                    <tr key={`detail-mobile-${left.year}`} className="sm:hidden">
                       <td colSpan={5} className="p-0">
-                        <ExpandedYear inv={inv} ibkr={ibkr} />
+                        <ExpandedYear
+                          left={left}
+                          right={right}
+                          leftPlatform={result.left}
+                          rightPlatform={result.right}
+                        />
                       </td>
                     </tr>
-                    <tr key={`detail-desktop-${inv.year}`} className="hidden sm:table-row">
+                    <tr key={`detail-desktop-${left.year}`} className="hidden sm:table-row">
                       <td colSpan={7} className="p-0">
-                        <ExpandedYear inv={inv} ibkr={ibkr} />
+                        <ExpandedYear
+                          left={left}
+                          right={right}
+                          leftPlatform={result.left}
+                          rightPlatform={result.right}
+                        />
                       </td>
                     </tr>
                   </>

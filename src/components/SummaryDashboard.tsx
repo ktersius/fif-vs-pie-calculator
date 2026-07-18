@@ -1,15 +1,17 @@
 import { formatNZD } from '../lib/format';
-import type { FeeSummary, SimulationResult } from '../lib/types';
+import type { CalculatorResult, PlatformResult } from '../lib/types';
 
 function Card({
   title,
-  investNow,
-  ibkr,
+  left,
+  right,
+  result,
   highlight,
 }: {
   title: string;
-  investNow: string;
-  ibkr: string;
+  left: string;
+  right: string;
+  result: CalculatorResult;
   highlight?: boolean;
 }) {
   return (
@@ -17,19 +19,30 @@ function Card({
       <h3 className="text-sm font-medium text-slate-500">{title}</h3>
       <div className="mt-2 grid grid-cols-2 gap-2">
         <div>
-          <div className="text-xs font-medium uppercase tracking-wide text-blue-600">InvestNow</div>
-          <div className="text-lg font-semibold text-slate-800">{investNow}</div>
+          <div
+            className="text-xs font-medium uppercase tracking-wide"
+            style={{ color: result.left.color }}
+          >
+            {result.left.shortLabel}
+          </div>
+          <div className="text-lg font-semibold text-slate-800">{left}</div>
         </div>
         <div>
-          <div className="text-xs font-medium uppercase tracking-wide text-green-600">IBKR</div>
-          <div className="text-lg font-semibold text-slate-800">{ibkr}</div>
+          <div
+            className="text-xs font-medium uppercase tracking-wide"
+            style={{ color: result.right.color }}
+          >
+            {result.right.shortLabel}
+          </div>
+          <div className="text-lg font-semibold text-slate-800">{right}</div>
         </div>
       </div>
     </div>
   );
 }
 
-function FeeBreakdown({ label, fees }: { label: string; fees: FeeSummary }) {
+function FeeBreakdown({ platform }: { platform: PlatformResult }) {
+  const { fees } = platform.summary;
   const rows: [string, number][] = [
     ['Transaction', fees.transaction],
     ['FX', fees.fx],
@@ -38,7 +51,9 @@ function FeeBreakdown({ label, fees }: { label: string; fees: FeeSummary }) {
   ];
   return (
     <div>
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</div>
+      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {platform.label}
+      </div>
       <table className="mt-1 w-full text-sm">
         <tbody>
           {rows.map(([name, value]) => (
@@ -57,10 +72,14 @@ function FeeBreakdown({ label, fees }: { label: string; fees: FeeSummary }) {
   );
 }
 
-export default function SummaryDashboard({ result }: { result: SimulationResult }) {
-  const { investNow, ibkr } = result;
+export default function SummaryDashboard({ result }: { result: CalculatorResult }) {
+  const { left, right } = result;
   const winner =
-    ibkr.summary.finalBalance > investNow.summary.finalBalance ? 'IBKR' : 'InvestNow';
+    right.summary.finalBalance > left.summary.finalBalance
+      ? right.shortLabel
+      : left.shortLabel;
+  const hasInheritedWealth =
+    left.summary.inheritedWealth && right.summary.inheritedWealth;
 
   return (
     <div className="space-y-4">
@@ -82,21 +101,48 @@ export default function SummaryDashboard({ result }: { result: SimulationResult 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card
           title="Total Principal Contributed"
-          investNow={formatNZD(result.totalPrincipal)}
-          ibkr={formatNZD(result.totalPrincipal)}
+          left={formatNZD(result.totalPrincipal)}
+          right={formatNZD(result.totalPrincipal)}
+          result={result}
         />
         <Card
           title="Final Net Balance"
-          investNow={formatNZD(investNow.summary.finalBalance)}
-          ibkr={formatNZD(ibkr.summary.finalBalance)}
+          left={formatNZD(left.summary.finalBalance)}
+          right={formatNZD(right.summary.finalBalance)}
+          result={result}
           highlight
         />
         <Card
           title="Total NZ Tax Paid"
-          investNow={formatNZD(investNow.summary.totalTax)}
-          ibkr={formatNZD(ibkr.summary.totalTax)}
+          left={formatNZD(left.summary.totalTax)}
+          right={formatNZD(right.summary.totalTax)}
+          result={result}
         />
       </div>
+
+      {hasInheritedWealth ? (
+        <>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Card
+              title="Inherited Wealth (death at horizon)"
+              left={formatNZD(left.summary.inheritedWealth!.inheritedBalance)}
+              right={formatNZD(right.summary.inheritedWealth!.inheritedBalance)}
+              result={result}
+              highlight
+            />
+            <Card
+              title="Illustrative US Estate Tax"
+              left={formatNZD(left.summary.inheritedWealth!.estateTax)}
+              right={formatNZD(right.summary.inheritedWealth!.estateTax)}
+              result={result}
+            />
+          </div>
+          <p className="text-xs text-slate-400">
+            Illustrative no-deductions estate scenario, calculated separately from ordinary
+            liquidation balances.
+          </p>
+        </>
+      ) : null}
 
       <div className="rounded-lg border border-slate-200 bg-white p-4">
         <div className="flex items-center justify-between">
@@ -106,8 +152,8 @@ export default function SummaryDashboard({ result }: { result: SimulationResult 
           </span>
         </div>
         <div className="mt-3 grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <FeeBreakdown label="InvestNow" fees={investNow.summary.fees} />
-          <FeeBreakdown label="IBKR" fees={ibkr.summary.fees} />
+          <FeeBreakdown platform={left} />
+          <FeeBreakdown platform={right} />
         </div>
       </div>
     </div>

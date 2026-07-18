@@ -9,20 +9,20 @@ import {
   YAxis,
 } from 'recharts';
 import { formatNZD } from '../lib/format';
-import type { SimulationResult } from '../lib/types';
+import type { CalculatorResult } from '../lib/types';
 
 interface Props {
-  result: SimulationResult;
+  result: CalculatorResult;
   onSelectYear: (year: number) => void;
 }
 
 export default function TaxDragChart({ result, onSelectYear }: Props) {
   // Skip Year 0 (no tax levied).
-  const data = result.investNow.records.slice(1).map((rec, i) => ({
+  const data = result.left.records.slice(1).map((rec, i) => ({
     calendarYear: rec.calendarYear,
     portfolioYear: rec.year,
-    InvestNow: Math.round(rec.tax),
-    IBKR: Math.round(result.ibkr.records[i + 1].tax),
+    left: Math.round(rec.tax),
+    right: Math.round(result.right.records[i + 1].tax),
   }));
 
   return (
@@ -40,14 +40,16 @@ export default function TaxDragChart({ result, onSelectYear }: Props) {
         />
         <Legend />
         <Bar
-          dataKey="InvestNow"
-          fill="#2563eb"
+          dataKey="left"
+          name={result.left.shortLabel}
+          fill={result.left.color}
           cursor="pointer"
           onClick={(d: { portfolioYear: number }) => onSelectYear(d.portfolioYear)}
         />
         <Bar
-          dataKey="IBKR"
-          fill="#16a34a"
+          dataKey="right"
+          name={result.right.shortLabel}
+          fill={result.right.color}
           cursor="pointer"
           onClick={(d: { portfolioYear: number }) => onSelectYear(d.portfolioYear)}
         />

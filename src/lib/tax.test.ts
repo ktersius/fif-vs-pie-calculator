@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { pieTax, fifTax } from './tax';
+import {
+  etfFifTax,
+  fifTax,
+  inheritedWealth,
+  pieTax,
+  tentativeEstateTaxUsd,
+} from './tax';
 
 describe('PIE FDR tax', () => {
   it('applies foreign withholding tax as a credit against gross PIE tax', () => {
@@ -93,5 +99,76 @@ describe('FIF FDR vs CV selection', () => {
       marginalRate: 0.105,
     });
     expect(detail.fdrNetTax).toBe(0);
+  });
+});
+
+describe('ETF domicile FIF tax', () => {
+  it('selects FDR for a US ETF in a bull market', () => {
+    const detail = etfFifTax({
+      domicile: 'us',
+      openingBalance: 100_000,
+      grossDividends: 1_500,
+      growth: 10_000,
+      managementFee: 0,
+      marginalRate: 0.33,
+    });
+    expect(detail.fdrIncome).toBe(5_000);
+    expect(detail.cvIncome).toBe(11_500);
+    expect(detail.selectedMethod).toBe('FDR');
+  });
+
+  it('shows the mild-decline CV difference between distributing and accumulating ETFs', () => {
+    const common = {
+      openingBalance: 100_000,
+      grossDividends: 1_500,
+      growth: -1_400,
+      managementFee: 0,
+      marginalRate: 0.33,
+    };
+    const us = etfFifTax({ ...common, domicile: 'us' });
+    const irish = etfFifTax({ ...common, domicile: 'irish' });
+    expect(us.cvIncome).toBe(100);
+    expect(irish.cvIncome).toBe(0);
+    expect(irish.foreignTaxCredit).toBe(0);
+  });
+
+  it('caps a US ETF foreign tax credit at each method liability', () => {
+    const detail = etfFifTax({
+      domicile: 'us',
+      openingBalance: 10_000,
+      grossDividends: 5_000,
+      growth: 0,
+      managementFee: 0,
+      marginalRate: 0.105,
+    });
+    expect(detail.fdrForeignTaxCredit).toBe(detail.fdrGrossTax);
+    expect(detail.fdrNetTax).toBe(0);
+  });
+
+  it('allows positive Irish CV income despite a negative price return', () => {
+    const detail = etfFifTax({
+      domicile: 'irish',
+      openingBalance: 100_000,
+      grossDividends: 2_000,
+      growth: -1_000,
+      managementFee: 70,
+      marginalRate: 0.33,
+    });
+    expect(detail.cvIncome).toBe(630);
+    expect(detail.cvNetTax).toBeCloseTo(207.9, 6);
+  });
+});
+
+describe('US estate tax scenario', () => {
+  it('uses the progressive schedule for a USD $300,000 holding', () => {
+    expect(tentativeEstateTaxUsd(300_000)).toBe(87_800);
+    const result = inheritedWealth(500_000, 'us'); // NZD $500k = USD $300k
+    expect(result.estateTax).toBeCloseTo(74_800 / 0.6, 6);
+    expect(result.inheritedBalance).toBeCloseTo(225_200 / 0.6, 6);
+  });
+
+  it('charges no estate tax at the USD $60,000 threshold or for an Irish ETF', () => {
+    expect(inheritedWealth(100_000, 'us').estateTax).toBe(0);
+    expect(inheritedWealth(500_000, 'irish').estateTax).toBe(0);
   });
 });
